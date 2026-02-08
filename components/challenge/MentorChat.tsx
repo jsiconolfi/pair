@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import ChatMessage from './ChatMessage';
 import { ConversationMessage } from '@/types';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, ArrowUp, Lightbulb, Sparkles } from 'lucide-react';
 
 interface MentorChatProps {
   messages: ConversationMessage[];
@@ -22,6 +22,7 @@ export default function MentorChat({
 }: MentorChatProps) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -31,6 +32,13 @@ export default function MentorChat({
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + 'px';
+    }
+  }, [input]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -39,34 +47,32 @@ export default function MentorChat({
     setInput('');
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
   const getHintLevelText = () => {
-    if (hintLevel === 1) return 'Subtle guidance';
-    if (hintLevel === 2) return 'Moderate guidance';
-    return 'Explicit guidance';
+    if (hintLevel === 1) return 'Subtle hints';
+    if (hintLevel === 2) return 'Moderate hints';
+    return 'Explicit hints';
   };
 
   return (
     <div className="h-full flex flex-col bg-white">
-      {/* Header */}
-      <div className="px-4 py-3 bg-gradient-to-r from-orange-50 to-peach border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-orange flex items-center justify-center text-white font-bold text-lg">
-            P
-          </div>
-          <div>
-            <div className="font-semibold text-gray-800">Pair</div>
-            <div className="text-xs text-gray-600">Your coding mentor</div>
-          </div>
-        </div>
-      </div>
-
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-400">
-            <div className="text-center">
-              <p className="text-sm">Start a conversation with Pair</p>
-              <p className="text-xs mt-1">Ask questions, share your thinking</p>
+          <div className="h-full flex items-center justify-center px-4">
+            <div className="text-center max-w-md">
+              <div className="w-12 h-12 rounded-full bg-claude-cream mx-auto mb-4 flex items-center justify-center">
+                <Lightbulb className="w-6 h-6 text-claude-orange" />
+              </div>
+              <p className="text-claude-text-secondary text-sm">
+                Start the conversation by sharing your initial thoughts on the problem
+              </p>
             </div>
           </div>
         ) : (
@@ -75,9 +81,24 @@ export default function MentorChat({
               <ChatMessage key={idx} message={msg} />
             ))}
             {isLoading && (
-              <div className="flex items-center gap-2 text-gray-500">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Pair is thinking...</span>
+              <div className="bg-claude-cream">
+                <div className="max-w-3xl mx-auto px-4 py-6">
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-claude-orange to-amber-600 flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 text-claude-text-secondary text-sm">
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 rounded-full bg-claude-text-secondary animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <div className="w-2 h-2 rounded-full bg-claude-text-secondary animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <div className="w-2 h-2 rounded-full bg-claude-text-secondary animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                        <span>Pair is thinking...</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </>
@@ -85,54 +106,75 @@ export default function MentorChat({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Hint Level Indicator */}
-      <div className="px-4 py-2 bg-gray-50 border-t border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-600">💡 Hint Level:</span>
-            <div className="flex gap-1">
-              {[1, 2, 3].map((level) => (
-                <div
-                  key={level}
-                  className={`w-2 h-2 rounded-full ${
-                    level <= hintLevel ? 'bg-orange' : 'bg-gray-300'
-                  }`}
-                />
-              ))}
+      {/* Hint Level Banner */}
+      {hintLevel > 1 && (
+        <div className="border-t border-claude px-4 py-2 bg-amber-50">
+          <div className="max-w-3xl mx-auto flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2 text-amber-800">
+              <Lightbulb className="w-4 h-4" />
+              <span className="font-medium">Hint mode: {getHintLevelText()}</span>
             </div>
-            <span className="text-xs text-gray-500">{getHintLevelText()}</span>
+            <button
+              onClick={onRequestHint}
+              disabled={isLoading || hintLevel === 3}
+              className="text-amber-700 hover:text-amber-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {hintLevel < 3 ? 'Need more help?' : 'Maximum hints'}
+            </button>
           </div>
-          <button
-            onClick={onRequestHint}
-            disabled={isLoading || hintLevel === 3}
-            className="text-xs text-orange hover:text-orange-600 disabled:text-gray-400 disabled:cursor-not-allowed font-medium"
-          >
-            Need a hint?
-          </button>
+        </div>
+      )}
+
+      {/* Input Area */}
+      <div className="border-t border-claude bg-white">
+        <div className="max-w-3xl mx-auto px-4 py-4">
+          <form onSubmit={handleSubmit} className="relative">
+            <div className="relative flex items-end gap-2 bg-surface rounded-2xl border border-claude focus-within:border-claude-orange transition-colors">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Reply to Pair..."
+                disabled={isLoading}
+                rows={1}
+                className="flex-1 resize-none bg-transparent px-4 py-3 focus:outline-none disabled:opacity-50 text-[15px] max-h-[200px]"
+              />
+              
+              <div className="flex items-center gap-1 pr-2 pb-2">
+                {hintLevel < 3 && (
+                  <button
+                    type="button"
+                    onClick={onRequestHint}
+                    disabled={isLoading}
+                    className="p-2 rounded-lg hover:bg-claude-hover disabled:opacity-50 transition-colors"
+                    title="Request a hint"
+                  >
+                    <Lightbulb className="w-5 h-5 text-claude-text-secondary" />
+                  </button>
+                )}
+                
+                <button
+                  type="submit"
+                  disabled={isLoading || !input.trim()}
+                  className="p-2 rounded-lg bg-claude-orange text-white hover:bg-opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  <ArrowUp className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="mt-2 flex items-center justify-between text-xs text-claude-text-secondary">
+              <span>Press Enter to send, Shift + Enter for new line</span>
+              {input.length > 0 && (
+                <span className={input.length > 2000 ? 'text-error' : ''}>
+                  {input.length} / 2000
+                </span>
+              )}
+            </div>
+          </form>
         </div>
       </div>
-
-      {/* Input */}
-      <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-white">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your response..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange focus:border-transparent"
-            disabled={isLoading}
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !input.trim()}
-            className="px-6 py-2 bg-orange text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-          >
-            <Send className="w-4 h-4" />
-            Send
-          </button>
-        </div>
-      </form>
     </div>
   );
 }

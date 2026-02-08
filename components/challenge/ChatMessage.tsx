@@ -1,6 +1,7 @@
 'use client';
 
 import { ConversationMessage } from '@/types';
+import { User, Sparkles } from 'lucide-react';
 
 interface ChatMessageProps {
   message: ConversationMessage;
@@ -10,19 +11,33 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-      <div
-        className={`max-w-[80%] rounded-lg px-4 py-3 ${
-          isUser
-            ? 'bg-orange text-white'
-            : 'bg-peach border-l-4 border-orange'
-        }`}
-      >
-        <div className={`text-xs font-semibold mb-1 ${isUser ? 'text-orange-100' : 'text-orange'}`}>
-          {isUser ? 'You' : 'Pair'}
-        </div>
-        <div className={`text-sm whitespace-pre-wrap ${isUser ? 'text-white' : 'text-gray-800'}`}>
-          {message.content}
+    <div className={`group relative ${isUser ? 'bg-white' : 'bg-claude-cream'}`}>
+      <div className="max-w-3xl mx-auto px-4 py-6">
+        <div className="flex gap-4">
+          {/* Avatar */}
+          <div className="flex-shrink-0">
+            {isUser ? (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                <User className="w-5 h-5 text-white" />
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-claude-orange to-amber-600 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+            )}
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-medium text-claude-text-secondary mb-2">
+              {isUser ? 'You' : 'Pair'}
+            </div>
+            <div className="prose prose-sm max-w-none">
+              <div className="text-[15px] leading-relaxed text-claude-text whitespace-pre-wrap">
+                {message.content}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
