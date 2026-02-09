@@ -48,10 +48,18 @@ export default function CoachingDemo() {
   });
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversation]);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + 'px';
+    }
+  }, [userPrompt]);
 
   const handleSendPrompt = async () => {
     if (!userPrompt.trim()) return;
@@ -530,18 +538,26 @@ export default function CoachingDemo() {
 
           {/* Input Area */}
           <div style={{
-            borderTop: '1px solid #3E3E3E',
-            background: '#2C2C2C',
-            padding: '16px 20px',
-            flexShrink: 0
+            padding: '12px 20px 20px',
+            flexShrink: 0,
+            background: '#1E1E1E'
           }}>
             <div style={{ maxWidth: '650px', margin: '0 auto' }}>
               <div style={{
+                background: '#2C2C2C',
+                border: '1px solid #3E3E3E',
+                borderRadius: '24px',
+                padding: '8px 8px 8px 20px',
                 display: 'flex',
-                gap: '10px',
-                alignItems: 'flex-end'
-              }}>
+                flexDirection: 'column',
+                transition: 'border-color 0.2s',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+              }}
+              onFocus={(e) => e.currentTarget.style.borderColor = '#4E4E4E'}
+              onBlur={(e) => e.currentTarget.style.borderColor = '#3E3E3E'}
+              >
                 <textarea
+                  ref={textareaRef}
                   value={userPrompt}
                   onChange={(e) => setUserPrompt(e.target.value)}
                   onKeyDown={(e) => {
@@ -550,77 +566,74 @@ export default function CoachingDemo() {
                       handleSendPrompt();
                     }
                   }}
-                  placeholder="Type any Claude prompt here..."
+                  placeholder="Type a prompt to analyze..."
                   disabled={isAnalyzing}
                   style={{
-                    flex: 1,
-                    minHeight: '48px',
-                    maxHeight: '120px',
-                    padding: '12px',
-                    fontSize: '14px',
-                    borderRadius: '10px',
-                    background: '#1E1E1E',
+                    width: '100%',
+                    background: 'transparent',
+                    border: 'none',
                     color: '#E5E5E5',
-                    border: '1px solid #3E3E3E',
+                    fontSize: '15px',
                     outline: 'none',
+                    resize: 'none',
+                    minHeight: '28px',
+                    maxHeight: '200px',
                     fontFamily: 'inherit',
-                    lineHeight: '1.4',
-                    resize: 'none'
+                    lineHeight: '1.5',
+                    overflow: 'auto',
+                    padding: '6px 0'
                   }}
                   rows={1}
                 />
 
-                <button
-                  onClick={handleSendPrompt}
-                  disabled={isAnalyzing || !userPrompt.trim()}
-                  style={{
-                    width: '48px',
-                    height: '48px',
-                    background: (isAnalyzing || !userPrompt.trim()) ? '#3E3E3E' : '#D97757',
-                    border: 'none',
-                    borderRadius: '10px',
-                    color: 'white',
-                    cursor: (isAnalyzing || !userPrompt.trim()) ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.2s',
-                    flexShrink: 0,
-                    opacity: (isAnalyzing || !userPrompt.trim()) ? 0.5 : 1
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isAnalyzing && userPrompt.trim()) {
-                      e.currentTarget.style.background = '#E89A7B';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isAnalyzing && userPrompt.trim()) {
-                      e.currentTarget.style.background = '#D97757';
-                    }
-                  }}
-                >
-                  {isAnalyzing ? (
-                    <div style={{ 
-                      width: '18px',
-                      height: '18px',
-                      border: '2px solid transparent',
-                      borderTopColor: 'white',
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  paddingTop: '4px'
+                }}>
+                  <button
+                    onClick={handleSendPrompt}
+                    disabled={isAnalyzing || !userPrompt.trim()}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      background: (isAnalyzing || !userPrompt.trim()) ? '#3E3E3E' : '#D97757',
+                      border: 'none',
                       borderRadius: '50%',
-                      animation: 'spin 0.8s linear infinite'
-                    }} />
-                  ) : (
-                    <ArrowUp size={20} />
-                  )}
-                </button>
-              </div>
-
-              <div style={{
-                marginTop: '8px',
-                fontSize: '11px',
-                color: '#737373',
-                textAlign: 'center'
-              }}>
-                {isAnalyzing ? 'Analyzing...' : 'Press Enter to analyze'}
+                      color: 'white',
+                      cursor: (isAnalyzing || !userPrompt.trim()) ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s',
+                      flexShrink: 0,
+                      opacity: (isAnalyzing || !userPrompt.trim()) ? 0.4 : 1
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isAnalyzing && userPrompt.trim()) {
+                        e.currentTarget.style.background = '#E89A7B';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isAnalyzing && userPrompt.trim()) {
+                        e.currentTarget.style.background = '#D97757';
+                      }
+                    }}
+                  >
+                    {isAnalyzing ? (
+                      <div style={{
+                        width: '18px',
+                        height: '18px',
+                        border: '2px solid transparent',
+                        borderTopColor: 'white',
+                        borderRadius: '50%',
+                        animation: 'spin 0.8s linear infinite'
+                      }} />
+                    ) : (
+                      <ArrowUp size={18} strokeWidth={2.5} />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

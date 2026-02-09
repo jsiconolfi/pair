@@ -6,7 +6,7 @@ import { ChallengeProvider } from '@/context/ChallengeContext';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Pair - Learn to Code by Thinking',
+  title: 'Forge - Learn to Code by Thinking',
   description: 'AI coding mentor that helps you learn through collaborative problem-solving',
 };
 

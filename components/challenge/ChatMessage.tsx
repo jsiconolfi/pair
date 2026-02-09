@@ -31,7 +31,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="text-xs font-medium text-claude-text-secondary mb-2">
-              {isUser ? 'You' : 'Pair'}
+              {isUser ? 'You' : 'Forge'}
             </div>
             <div className="prose prose-sm max-w-none">
               <div className="text-[15px] leading-relaxed text-claude-text whitespace-pre-wrap">

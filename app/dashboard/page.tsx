@@ -205,7 +205,11 @@ export default function DashboardPage() {
         borderRight: '1px solid #3E3E3E',
         display: 'flex',
         flexDirection: 'column',
-        flexShrink: 0
+        flexShrink: 0,
+        position: 'sticky',
+        top: 0,
+        height: '100vh',
+        overflowY: 'auto'
       }}>
         {/* Logo - NOW WITH CLAUDE ICON */}
         <div style={{ 

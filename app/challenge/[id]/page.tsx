@@ -10,7 +10,7 @@ import {
   ChevronLeft,
   User,
   Lightbulb,
-  Send,
+  ArrowUp,
   CheckCircle2,
   BookOpen,
   Target,
@@ -24,6 +24,7 @@ export default function ChallengePage() {
   const router = useRouter();
   const skillId = params.id as string;
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [skill, setSkill] = useState<Skill | null>(null);
   const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
@@ -67,6 +68,13 @@ Take your time, experiment, and ask me questions if you get stuck!`;
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversationHistory]);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + 'px';
+    }
+  }, [input]);
 
   const handleSendMessage = async (message: string) => {
     if (!skill) return;
@@ -618,10 +626,9 @@ Be encouraging and specific in your feedback. Use examples from their prompt to 
 
           {/* Input Area */}
           <div style={{
-            borderTop: '1px solid #3E3E3E',
-            background: '#2C2C2C',
-            padding: '16px 32px 24px',
-            flexShrink: 0
+            padding: '12px 32px 24px',
+            flexShrink: 0,
+            background: '#1E1E1E'
           }}>
             <div style={{
               maxWidth: '720px',
@@ -629,19 +636,20 @@ Be encouraging and specific in your feedback. Use examples from their prompt to 
             }}>
               <form onSubmit={handleSubmit}>
                 <div style={{
-                  background: '#1E1E1E',
+                  background: '#2C2C2C',
                   border: '1px solid #3E3E3E',
-                  borderRadius: '12px',
-                  padding: '12px',
+                  borderRadius: '24px',
+                  padding: '8px 8px 8px 20px',
                   display: 'flex',
-                  gap: '8px',
-                  alignItems: 'flex-end',
-                  transition: 'border-color 0.2s'
+                  flexDirection: 'column',
+                  transition: 'border-color 0.2s',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
                 }}
-                onFocus={(e) => e.currentTarget.style.borderColor = '#D97757'}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#4E4E4E'}
                 onBlur={(e) => e.currentTarget.style.borderColor = '#3E3E3E'}
                 >
                   <textarea
+                    ref={textareaRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => {
@@ -650,64 +658,63 @@ Be encouraging and specific in your feedback. Use examples from their prompt to 
                         handleSubmit(e);
                       }
                     }}
-                    placeholder="Share your prompt attempt or ask for guidance..."
+                    placeholder="Reply to Forge..."
                     disabled={isLoading}
                     style={{
-                      flex: 1,
+                      width: '100%',
                       background: 'transparent',
                       border: 'none',
                       color: '#E5E5E5',
                       fontSize: '15px',
                       outline: 'none',
                       resize: 'none',
-                      minHeight: '24px',
+                      minHeight: '28px',
                       maxHeight: '200px',
                       fontFamily: 'inherit',
-                      lineHeight: '1.5'
+                      lineHeight: '1.5',
+                      overflow: 'auto',
+                      padding: '6px 0'
                     }}
                     rows={1}
                   />
 
-                  <button
-                    type="submit"
-                    disabled={isLoading || !input.trim()}
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      background: (isLoading || !input.trim()) ? '#3E3E3E' : '#D97757',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: 'white',
-                      cursor: (isLoading || !input.trim()) ? 'not-allowed' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.2s',
-                      flexShrink: 0,
-                      opacity: (isLoading || !input.trim()) ? 0.5 : 1
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isLoading && input.trim()) {
-                        e.currentTarget.style.background = '#E89A7B';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isLoading && input.trim()) {
-                        e.currentTarget.style.background = '#D97757';
-                      }
-                    }}
-                  >
-                    <Send size={16} />
-                  </button>
-                </div>
-
-                <div style={{
-                  marginTop: '8px',
-                  fontSize: '12px',
-                  color: '#737373',
-                  textAlign: 'center'
-                }}>
-                  Share your prompt attempt and I'll give you feedback
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    paddingTop: '4px'
+                  }}>
+                    <button
+                      type="submit"
+                      disabled={isLoading || !input.trim()}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        background: (isLoading || !input.trim()) ? '#3E3E3E' : '#D97757',
+                        border: 'none',
+                        borderRadius: '50%',
+                        color: 'white',
+                        cursor: (isLoading || !input.trim()) ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s',
+                        flexShrink: 0,
+                        opacity: (isLoading || !input.trim()) ? 0.4 : 1
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isLoading && input.trim()) {
+                          e.currentTarget.style.background = '#E89A7B';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isLoading && input.trim()) {
+                          e.currentTarget.style.background = '#D97757';
+                        }
+                      }}
+                    >
+                      <ArrowUp size={18} strokeWidth={2.5} />
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>

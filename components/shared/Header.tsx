@@ -39,7 +39,7 @@ export default function Header({ showBack = false, onBack }: HeaderProps) {
               <rect x="3" y="3" width="18" height="18" rx="4" fill="#CC785C"/>
               <path d="M12 7v10M7 12h10" stroke="white" strokeWidth="2" strokeLinecap="round"/>
             </svg>
-            <span className="font-semibold text-lg text-claude-text">Pair</span>
+            <span className="font-semibold text-lg text-claude-text">Forge</span>
           </div>
         </div>
 
