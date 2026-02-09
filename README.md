@@ -1,12 +1,12 @@
-# Forge
+# Claude Coach
 
 **Master Claude's full potential.**
 
-Forge is an interactive learning app that teaches you advanced Claude prompting techniques through hands-on challenges and real-time coaching. Instead of reading documentation, you learn by doing and crafting prompts, getting feedback from an AI mentor, and building skills you can immediately apply.
+Claude Coach is an interactive learning app that teaches you advanced Claude prompting techniques through hands-on challenges and real-time coaching. Instead of reading documentation, you learn by doing and crafting prompts, getting feedback from an AI mentor, and building skills you can immediately apply.
 
 ## What It Does
 
-Forge presents a skill tree of Claude techniques and pairs you with an AI mentor (powered by Claude) that:
+Claude Coach presents a skill tree of Claude techniques and pairs you with an AI mentor (powered by Claude) that:
 
 - **Guides your thinking** through Socratic dialogue — asks questions instead of giving answers
 - **Teaches real techniques** — XML tags, few-shot prompting, role prompting, chain-of-thought, Projects
@@ -103,14 +103,14 @@ pair/
 │   ├── claude.ts             # Anthropic SDK client
 │   ├── skills.ts             # Skill tree definitions and data
 │   ├── storage.ts            # localStorage persistence for progress
-│   └── systemPrompts.ts      # Forge's mentoring personality and behavior
+│   └── systemPrompts.ts      # Coach's mentoring personality and behavior
 └── types/
     └── index.ts              # TypeScript interfaces
 ```
 
-## How Forge Mentors
+## How Coach Mentors
 
-Forge follows a structured mentoring approach:
+Claude Coach follows a structured mentoring approach:
 
 1. **Ask what they've tried** — "Walk me through your thinking so far"
 2. **Identify the conceptual gap** — not the surface-level error
@@ -125,7 +125,7 @@ The hint system escalates across three levels:
 
 ## Design
 
-Forge uses a dark theme inspired by Claude.ai:
+Claude Coach uses a dark theme inspired by Claude.ai:
 
 - **Background:** `#1E1E1E`
 - **Surfaces:** `#2C2C2C`

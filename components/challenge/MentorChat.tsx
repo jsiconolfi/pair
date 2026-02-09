@@ -95,7 +95,7 @@ export default function MentorChat({
                           <div className="w-2 h-2 rounded-full bg-claude-text-secondary animate-bounce" style={{ animationDelay: '150ms' }} />
                           <div className="w-2 h-2 rounded-full bg-claude-text-secondary animate-bounce" style={{ animationDelay: '300ms' }} />
                         </div>
-                        <span>Forge is thinking...</span>
+                        <span>Coach is thinking...</span>
                       </div>
                     </div>
                   </div>
@@ -136,7 +136,7 @@ export default function MentorChat({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Reply to Forge..."
+                placeholder="Reply to Coach..."
                 disabled={isLoading}
                 rows={1}
                 className="flex-1 resize-none bg-transparent px-4 py-3 focus:outline-none disabled:opacity-50 text-[15px] max-h-[200px]"

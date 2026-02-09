@@ -73,7 +73,7 @@ export default function DashboardPage() {
 
   const onboardingContent = [
     {
-      title: 'Welcome to Claude Forge',
+      title: 'Welcome to Claude Coach',
       description: 'Learn to unlock Claude\'s full potential through hands-on practice with advanced techniques.',
       icon: <Claude.Color size={48} />
     },
@@ -201,13 +201,12 @@ export default function DashboardPage() {
         height: '100vh',
         overflowY: 'auto'
       }}>
-        {/* Logo - NOW WITH CLAUDE ICON */}
-        <div style={{ 
+        {/* Logo */}
+        <div style={{
           padding: '20px',
           borderBottom: '1px solid #3E3E3E'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {/* Claude Logo */}
             <div style={{
               width: '32px',
               height: '32px',
@@ -220,23 +219,11 @@ export default function DashboardPage() {
             }}>
               <Claude size={18} color="white" />
             </div>
-            <div>
-              <div style={{ 
-                fontSize: '16px', 
-                fontWeight: '600',
-                color: '#FFFFFF',
-                letterSpacing: '-0.01em'
-              }}>
-                Forge
-              </div>
-              <div style={{ 
-                fontSize: '11px', 
-                color: '#737373',
-                marginTop: '-2px'
-              }}>
-                by Claude
-              </div>
-            </div>
+            <img
+              src="/claude-coach.svg"
+              alt="Claude Coach"
+              style={{ height: '13px', width: 'auto' }}
+            />
           </div>
         </div>
 
@@ -272,7 +259,7 @@ export default function DashboardPage() {
             }}
           >
             <Target size={16} />
-            Skill Forge
+            Skill Coaching
           </button>
 
           <button
@@ -570,7 +557,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Skill Forge */}
+          {/* Skill Coaching */}
           {Object.entries(categories).map(([categoryKey, categoryData]) => {
             const categorySkills = skills.filter(s => s.category === categoryKey);
             

@@ -32,7 +32,7 @@ export default function Home() {
         }}>
           <Claude size={32} color="white" />
         </div>
-        <div style={{ fontSize: '24px', fontWeight: '500', color: '#FFFFFF', marginBottom: '8px' }}>Forge</div>
+        <div style={{ fontSize: '24px', fontWeight: '500', color: '#FFFFFF', marginBottom: '8px' }}>Coach</div>
         <div style={{ fontSize: '14px', color: '#8C8C8C' }}>Loading...</div>
       </div>
     </div>

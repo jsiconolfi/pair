@@ -252,7 +252,7 @@ Be encouraging and specific in your feedback. Use examples from their prompt to 
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
         >
           <ChevronLeft size={16} />
-          Back to Skill Forge
+          Back to Skill Coaching
         </button>
 
         <div style={{ 
@@ -672,7 +672,7 @@ Be encouraging and specific in your feedback. Use examples from their prompt to 
                         handleSubmit(e);
                       }
                     }}
-                    placeholder="Reply to Forge..."
+                    placeholder="Reply to Coach..."
                     disabled={isLoading}
                     style={{
                       width: '100%',
