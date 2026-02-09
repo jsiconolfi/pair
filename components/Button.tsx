@@ -75,7 +75,6 @@ export default function Button({
       disabled={disabled}
       onMouseDown={() => setIsPressed(true)}
       onMouseUp={() => setIsPressed(false)}
-      onMouseLeave={() => setIsPressed(false)}
       style={{
         width: fullWidth ? '100%' : 'auto',
         padding: currentSize.padding,
@@ -101,6 +100,7 @@ export default function Button({
         }
       }}
       onMouseLeave={(e) => {
+        setIsPressed(false);
         e.currentTarget.style.background = current.background;
       }}
     >
