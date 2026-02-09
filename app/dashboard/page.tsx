@@ -1,341 +1,733 @@
 'use client';
 
-import { challenges } from '@/lib/challenges';
 import { useRouter } from 'next/navigation';
-import { Sparkles, MessageSquare, Brain, Zap, Target, ArrowRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Claude } from '@lobehub/icons';
+import {
+  Plus,
+  Target,
+  Lock,
+  Check,
+  TrendingUp,
+  Award,
+  BookOpen,
+  Code2,
+  FileText,
+  Zap,
+  Layers,
+  Brain,
+  ChevronRight,
+  ExternalLink
+} from 'lucide-react';
+import { skills } from '@/lib/skills';
+import { getProgress, isOnboarded, markOnboarded } from '@/lib/storage';
+import { achievements, checkAchievements } from '@/lib/achievements';
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [progress, setProgress] = useState(getProgress());
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+
+  useEffect(() => {
+    if (!isOnboarded()) {
+      setShowOnboarding(true);
+    }
+    setProgress(getProgress());
+  }, []);
+
+  const categories = {
+    prompting: { title: 'Prompting Techniques', color: '#3B82F6' },
+    projects: { title: 'Projects & Context', color: '#8B5CF6' },
+    artifacts: { title: 'Artifacts & Creation', color: '#EC4899' },
+    advanced: { title: 'Advanced Features', color: '#F59E0B' },
+  };
+
+  const completedCount = progress.completedSkills.length;
+  const totalSkills = skills.length;
+  const earnedAchievements = checkAchievements(progress.completedSkills);
+
+  const isSkillUnlocked = (skill: any) => {
+    if (skill.prerequisites.length === 0) return true;
+    return skill.prerequisites.every((prereq: string) => 
+      progress.completedSkills.includes(prereq)
+    );
+  };
+
+  const handleCompleteOnboarding = () => {
+    markOnboarded();
+    setShowOnboarding(false);
+  };
+
+  const onboardingContent = [
+    {
+      title: 'Welcome to Claude Forge',
+      description: 'Learn to unlock Claude\'s full potential through hands-on practice with advanced techniques.',
+      icon: <Claude.Color size={48} />
+    },
+    {
+      title: 'Learn by Doing',
+      description: 'Each challenge teaches you a specific Claude technique through real examples and coaching feedback.',
+      icon: <Target size={48} color="#3B82F6" />
+    },
+    {
+      title: 'Track Your Progress',
+      description: 'Your completed skills and achievements are saved automatically. Start anytime, continue anywhere.',
+      icon: <TrendingUp size={48} color="#10B981" />
+    },
+  ];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#1A1A1A', color: '#E5E5E5' }}>
-      {/* Header - Dark Mode */}
-      <header style={{
-        background: '#212121',
-        borderBottom: '1px solid #2D2D2D',
-        padding: '12px 24px',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50
-      }}>
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto',
+    <div style={{ minHeight: '100vh', background: '#1E1E1E', display: 'flex' }}>
+      {/* Onboarding Modal */}
+      {showOnboarding && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.95)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'center',
+          zIndex: 1000
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '28px',
-              height: '28px',
-              background: 'linear-gradient(135deg, #CC785C, #D4926F)',
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontWeight: 'bold',
-              fontSize: '16px'
-            }}>
-              P
+          <div style={{
+            background: '#2C2C2C',
+            border: '1px solid #3E3E3E',
+            borderRadius: '16px',
+            padding: '48px',
+            maxWidth: '540px',
+            textAlign: 'center'
+          }}>
+            <div style={{ marginBottom: '32px' }}>
+              {onboardingContent[onboardingStep].icon}
             </div>
-            <span style={{ 
-              fontSize: '18px', 
-              fontWeight: '500',
-              color: '#E5E5E5'
+
+            <h2 style={{
+              fontSize: '28px',
+              fontWeight: '600',
+              color: '#FFFFFF',
+              marginBottom: '16px'
             }}>
-              Pair
-            </span>
+              {onboardingContent[onboardingStep].title}
+            </h2>
+
+            <p style={{
+              fontSize: '16px',
+              color: '#A3A3A3',
+              lineHeight: '1.6',
+              marginBottom: '32px'
+            }}>
+              {onboardingContent[onboardingStep].description}
+            </p>
+
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              justifyContent: 'center',
+              marginBottom: '32px'
+            }}>
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: i === onboardingStep ? '#D97757' : '#3E3E3E'
+                  }}
+                />
+              ))}
+            </div>
+
+            {onboardingStep < 2 ? (
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={handleCompleteOnboarding}
+                  style={{
+                    flex: 1,
+                    padding: '14px',
+                    background: 'transparent',
+                    border: '1px solid #3E3E3E',
+                    borderRadius: '10px',
+                    color: '#A3A3A3',
+                    fontSize: '15px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Skip
+                </button>
+                <button
+                  onClick={() => setOnboardingStep(onboardingStep + 1)}
+                  style={{
+                    flex: 1,
+                    padding: '14px',
+                    background: '#D97757',
+                    border: 'none',
+                    borderRadius: '10px',
+                    color: 'white',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Next
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleCompleteOnboarding}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  background: '#D97757',
+                  border: 'none',
+                  borderRadius: '10px',
+                  color: 'white',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Get Started
+              </button>
+            )}
           </div>
         </div>
-      </header>
+      )}
 
-      {/* Hero Section - Dark */}
-      <div style={{ 
-        background: '#212121',
-        borderBottom: '1px solid #2D2D2D'
+      {/* Left Sidebar */}
+      <div style={{
+        width: '260px',
+        background: '#2C2C2C',
+        borderRight: '1px solid #3E3E3E',
+        display: 'flex',
+        flexDirection: 'column',
+        flexShrink: 0
       }}>
+        {/* Logo - NOW WITH CLAUDE ICON */}
         <div style={{ 
-          maxWidth: '900px', 
-          margin: '0 auto', 
-          padding: '40px 24px' 
+          padding: '20px',
+          borderBottom: '1px solid #3E3E3E'
         }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {/* Claude Logo */}
             <div style={{
-              width: '48px',
-              height: '48px',
-              background: 'linear-gradient(135deg, #CC785C, #D4926F)',
-              borderRadius: '12px',
+              width: '32px',
+              height: '32px',
+              background: 'linear-gradient(135deg, #D97757 0%, #C9653E 100%)',
+              borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              flexShrink: 0
+              boxShadow: '0 2px 8px rgba(217, 119, 87, 0.3)'
             }}>
-              <Sparkles size={24} color="white" />
+              <Claude size={18} color="white" />
             </div>
-            <div style={{ flex: 1 }}>
-              <h1 style={{ 
-                fontSize: '28px', 
-                fontWeight: '500',
+            <div>
+              <div style={{ 
+                fontSize: '16px', 
+                fontWeight: '600',
                 color: '#FFFFFF',
-                marginBottom: '10px'
+                letterSpacing: '-0.01em'
               }}>
-                Welcome to Pair
-              </h1>
-              <p style={{ 
-                fontSize: '15px', 
-                color: '#A3A3A3',
-                lineHeight: '1.6',
-                maxWidth: '650px'
+                Forge
+              </div>
+              <div style={{ 
+                fontSize: '11px', 
+                color: '#737373',
+                marginTop: '-2px'
               }}>
-                Learn to code through collaborative problem-solving with AI. Pair guides you with questions,
-                not answers—helping you build genuine understanding and problem-solving skills.
-              </p>
+                by Claude
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Feature Pills - Dark */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-            <div style={{
+        {/* Navigation */}
+        <nav style={{ flex: 1, padding: '16px 12px' }}>
+          <div style={{ 
+            padding: '8px 12px',
+            fontSize: '11px',
+            color: '#737373',
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            marginBottom: '8px'
+          }}>
+            Learning
+          </div>
+          
+          <button
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              background: '#D97757',
+              border: 'none',
+              borderRadius: '6px',
+              color: '#FFFFFF',
+              fontSize: '14px',
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '7px',
-              padding: '6px 12px',
-              background: '#2A2A2A',
+              gap: '10px',
+              marginBottom: '4px',
+              fontWeight: '500'
+            }}
+          >
+            <Target size={16} />
+            Skill Tree
+          </button>
+
+          <button
+            onClick={() => router.push('/coaching')}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              background: 'transparent',
+              border: 'none',
               borderRadius: '6px',
-              border: '1px solid #3A3A3A'
-            }}>
-              <MessageSquare size={14} color="#B3B3B3" />
-              <span style={{ fontSize: '13px', color: '#B3B3B3' }}>Socratic mentoring</span>
-            </div>
-            <div style={{
+              color: '#A3A3A3',
+              fontSize: '14px',
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '7px',
-              padding: '6px 12px',
-              background: '#2A2A2A',
+              gap: '10px',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#3A3A3A';
+              e.currentTarget.style.color = '#FFFFFF';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#A3A3A3';
+            }}
+          >
+            <Claude size={16} />
+            Live Coaching
+          </button>
+
+          <button
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              background: 'transparent',
+              border: 'none',
               borderRadius: '6px',
-              border: '1px solid #3A3A3A'
-            }}>
-              <Brain size={14} color="#B3B3B3" />
-              <span style={{ fontSize: '13px', color: '#B3B3B3' }}>Active learning</span>
-            </div>
-            <div style={{
+              color: '#A3A3A3',
+              fontSize: '14px',
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '7px',
-              padding: '6px 12px',
-              background: '#2A2A2A',
+              gap: '10px',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#3A3A3A';
+              e.currentTarget.style.color = '#FFFFFF';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#A3A3A3';
+            }}
+          >
+            <Award size={16} />
+            Achievements
+          </button>
+
+          <div style={{ 
+            height: '1px',
+            background: '#3E3E3E',
+            margin: '16px 0'
+          }} />
+
+          <button
+            onClick={() => window.open('https://claude.ai', '_blank')}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              background: 'transparent',
+              border: 'none',
               borderRadius: '6px',
-              border: '1px solid #3A3A3A'
-            }}>
-              <Zap size={14} color="#B3B3B3" />
-              <span style={{ fontSize: '13px', color: '#B3B3B3' }}>Adaptive hints</span>
-            </div>
+              color: '#A3A3A3',
+              fontSize: '14px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#3A3A3A';
+              e.currentTarget.style.color = '#FFFFFF';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#A3A3A3';
+            }}
+          >
+            <ExternalLink size={16} />
+            Open Claude
+          </button>
+        </nav>
+
+        {/* Progress Footer */}
+        <div style={{ 
+          padding: '16px',
+          borderTop: '1px solid #3E3E3E'
+        }}>
+          <div style={{ 
+            fontSize: '12px',
+            color: '#737373',
+            marginBottom: '8px'
+          }}>
+            Your Progress
+          </div>
+          <div style={{ 
+            fontSize: '20px',
+            fontWeight: '600',
+            color: '#FFFFFF',
+            marginBottom: '8px'
+          }}>
+            {completedCount}/{totalSkills} Skills
+          </div>
+          <div style={{ 
+            width: '100%',
+            height: '6px',
+            background: '#3E3E3E',
+            borderRadius: '3px',
+            overflow: 'hidden'
+          }}>
+            <div style={{ 
+              width: `${(completedCount / totalSkills) * 100}%`,
+              height: '100%',
+              background: 'linear-gradient(90deg, #D97757, #E89A7B)',
+              transition: 'width 0.3s'
+            }} />
           </div>
         </div>
       </div>
 
-      {/* Main Content - Dark */}
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 24px' }}>
-        
-        {/* Progress Cards - Dark */}
-        <div style={{ marginBottom: '40px' }}>
-          <h2 style={{ 
-            fontSize: '17px', 
-            fontWeight: '500',
-            color: '#FFFFFF',
-            marginBottom: '16px'
-          }}>
-            Your Progress
-          </h2>
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(3, 1fr)', 
-            gap: '12px' 
-          }}>
-            <div style={{
-              background: '#212121',
-              border: '1px solid #2D2D2D',
-              borderRadius: '10px',
-              padding: '20px'
+      {/* Main Content - REST IS THE SAME */}
+      <div style={{ 
+        flex: 1,
+        overflowY: 'auto',
+        background: '#1E1E1E'
+      }}>
+        <div style={{ 
+          maxWidth: '920px',
+          margin: '0 auto',
+          padding: '48px 32px'
+        }}>
+          {/* Header */}
+          <div style={{ marginBottom: '40px' }}>
+            <h1 style={{ 
+              fontSize: '36px',
+              fontWeight: '500',
+              color: '#FFFFFF',
+              marginBottom: '12px',
+              letterSpacing: '-0.02em'
             }}>
-              <div style={{ fontSize: '32px', fontWeight: '500', color: '#FFFFFF', marginBottom: '4px' }}>0</div>
-              <div style={{ fontSize: '14px', color: '#8C8C8C' }}>Completed</div>
-            </div>
-            <div style={{
-              background: '#212121',
-              border: '1px solid #2D2D2D',
-              borderRadius: '10px',
-              padding: '20px'
+              Master Claude's Capabilities
+            </h1>
+            <p style={{ 
+              fontSize: '16px',
+              color: '#A3A3A3',
+              lineHeight: '1.6',
+              maxWidth: '640px'
             }}>
-              <div style={{ fontSize: '32px', fontWeight: '500', color: '#FFFFFF', marginBottom: '4px' }}>0</div>
-              <div style={{ fontSize: '14px', color: '#8C8C8C' }}>Concepts mastered</div>
-            </div>
-            <div style={{
-              background: '#212121',
-              border: '1px solid #2D2D2D',
-              borderRadius: '10px',
-              padding: '20px'
-            }}>
-              <div style={{ fontSize: '32px', fontWeight: '500', color: '#FFFFFF', marginBottom: '4px' }}>0</div>
-              <div style={{ fontSize: '14px', color: '#8C8C8C' }}>Day streak</div>
-            </div>
+              Unlock Claude's full potential through hands-on challenges. Learn advanced prompting techniques, 
+              powerful features, and best practices used by expert users.
+            </p>
           </div>
-        </div>
 
-        {/* Challenges - Dark */}
-        <div>
-          <h2 style={{ 
-            fontSize: '17px', 
-            fontWeight: '500',
-            color: '#FFFFFF',
-            marginBottom: '16px'
-          }}>
-            Challenges
-          </h2>
+          {/* Stats Cards */}
           <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', 
-            gap: '12px' 
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '16px',
+            marginBottom: '48px'
           }}>
-            {challenges.map((challenge) => {
-              const difficultyColors = {
-                1: { bg: '#1A3A2A', text: '#6EE7B7', border: '#2D5A3F' },
-                2: { bg: '#3A2F1A', text: '#FCD34D', border: '#5A4A2D' },
-                3: { bg: '#3A1A1A', text: '#FCA5A5', border: '#5A2D2D' }
-              };
-              const colors = difficultyColors[challenge.difficulty];
-              const difficultyText = challenge.difficulty === 1 ? 'Easy' : challenge.difficulty === 2 ? 'Medium' : 'Hard';
-
-              return (
-                <div
-                  key={challenge.id}
-                  onClick={() => router.push(`/challenge/${challenge.id}`)}
-                  style={{
-                    background: '#212121',
-                    border: '1px solid #2D2D2D',
-                    borderRadius: '10px',
-                    padding: '18px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#CC785C';
-                    e.currentTarget.style.background = '#252525';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#2D2D2D';
-                    e.currentTarget.style.background = '#212121';
-                  }}
-                >
-                  {/* Header */}
+            <div style={{
+              padding: '24px',
+              background: '#2C2C2C',
+              border: '1px solid #3E3E3E',
+              borderRadius: '12px'
+            }}>
+              <div style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginBottom: '12px'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  background: 'rgba(217, 119, 87, 0.1)',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Target size={20} color="#D97757" />
+                </div>
+                <div>
                   <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'flex-start', 
-                    justifyContent: 'space-between',
-                    marginBottom: '12px'
+                    fontSize: '28px',
+                    fontWeight: '600',
+                    color: '#FFFFFF'
                   }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                        <div style={{
-                          width: '22px',
-                          height: '22px',
-                          background: 'linear-gradient(135deg, #CC785C, #D4926F)',
-                          borderRadius: '5px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <Target size={12} color="white" />
-                        </div>
-                        <h3 style={{ 
-                          fontSize: '16px', 
-                          fontWeight: '500',
-                          color: '#FFFFFF',
-                          margin: 0
-                        }}>
-                          {challenge.title}
-                        </h3>
-                      </div>
-                    </div>
-                    <span style={{
-                      fontSize: '11px',
-                      fontWeight: '500',
-                      padding: '4px 9px',
-                      borderRadius: '5px',
-                      background: colors.bg,
-                      color: colors.text,
-                      border: `1px solid ${colors.border}`,
-                      whiteSpace: 'nowrap',
-                      marginLeft: '12px'
-                    }}>
-                      {difficultyText}
-                    </span>
-                  </div>
-
-                  {/* Description */}
-                  <p style={{
-                    fontSize: '14px',
-                    color: '#A3A3A3',
-                    lineHeight: '1.5',
-                    marginBottom: '14px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    minHeight: '42px'
-                  }}>
-                    {challenge.description.split('\n\n')[0].substring(0, 140)}...
-                  </p>
-
-                  {/* Concepts */}
-                  <div style={{ 
-                    display: 'flex', 
-                    flexWrap: 'wrap', 
-                    gap: '6px',
-                    marginBottom: '14px'
-                  }}>
-                    {challenge.concepts.slice(0, 3).map((concept, idx) => (
-                      <span
-                        key={idx}
-                        style={{
-                          fontSize: '12px',
-                          background: '#2A2A2A',
-                          color: '#B3B3B3',
-                          padding: '4px 9px',
-                          borderRadius: '5px',
-                          border: '1px solid #3A3A3A'
-                        }}
-                      >
-                        {concept.name}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Footer */}
-                  <div style={{
-                    paddingTop: '14px',
-                    borderTop: '1px solid #2D2D2D',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between'
-                  }}>
-                    <span style={{
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#CC785C'
-                    }}>
-                      Start Challenge
-                    </span>
-                    <ArrowRight size={16} color="#CC785C" />
+                    {completedCount}
                   </div>
                 </div>
-              );
-            })}
+              </div>
+              <div style={{ 
+                fontSize: '14px',
+                color: '#737373'
+              }}>
+                Skills Mastered
+              </div>
+            </div>
+
+            <div style={{
+              padding: '24px',
+              background: '#2C2C2C',
+              border: '1px solid #3E3E3E',
+              borderRadius: '12px'
+            }}>
+              <div style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginBottom: '12px'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <BookOpen size={20} color="#3B82F6" />
+                </div>
+                <div>
+                  <div style={{ 
+                    fontSize: '28px',
+                    fontWeight: '600',
+                    color: '#FFFFFF'
+                  }}>
+                    {skills.filter(s => isSkillUnlocked(s)).length}
+                  </div>
+                </div>
+              </div>
+              <div style={{ 
+                fontSize: '14px',
+                color: '#737373'
+              }}>
+                Skills Available
+              </div>
+            </div>
+
+            <div style={{
+              padding: '24px',
+              background: '#2C2C2C',
+              border: '1px solid #3E3E3E',
+              borderRadius: '12px'
+            }}>
+              <div style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginBottom: '12px'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Award size={20} color="#10B981" />
+                </div>
+                <div>
+                  <div style={{ 
+                    fontSize: '28px',
+                    fontWeight: '600',
+                    color: '#FFFFFF'
+                  }}>
+                    {earnedAchievements.length}
+                  </div>
+                </div>
+              </div>
+              <div style={{ 
+                fontSize: '14px',
+                color: '#737373'
+              }}>
+                Achievements Earned
+              </div>
+            </div>
           </div>
+
+          {/* Skill Tree */}
+          {Object.entries(categories).map(([categoryKey, categoryData]) => {
+            const categorySkills = skills.filter(s => s.category === categoryKey);
+            
+            return (
+              <div key={categoryKey} style={{ marginBottom: '40px' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  marginBottom: '20px'
+                }}>
+                  <div style={{
+                    width: '4px',
+                    height: '24px',
+                    background: categoryData.color,
+                    borderRadius: '2px'
+                  }} />
+                  <h2 style={{
+                    fontSize: '20px',
+                    fontWeight: '600',
+                    color: '#FFFFFF',
+                    margin: 0
+                  }}>
+                    {categoryData.title}
+                  </h2>
+                  <div style={{
+                    fontSize: '13px',
+                    color: '#737373',
+                    padding: '2px 8px',
+                    background: '#343434',
+                    borderRadius: '4px'
+                  }}>
+                    {categorySkills.filter(s => progress.completedSkills.includes(s.id)).length}/{categorySkills.length}
+                  </div>
+                </div>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '16px'
+                }}>
+                  {categorySkills.map((skill) => {
+                    const difficultyDots = Array(skill.difficulty).fill('●').join('');
+                    const isCompleted = progress.completedSkills.includes(skill.id);
+                    const isUnlocked = isSkillUnlocked(skill);
+                    
+                    return (
+                      <button
+                        key={skill.id}
+                        onClick={() => {
+                          if (isUnlocked) {
+                            router.push(`/challenge/${skill.id}`);
+                          }
+                        }}
+                        disabled={!isUnlocked}
+                        style={{
+                          padding: '20px',
+                          background: isCompleted ? 'rgba(16, 185, 129, 0.05)' : '#2C2C2C',
+                          border: isCompleted 
+                            ? '1px solid rgba(16, 185, 129, 0.3)'
+                            : isUnlocked 
+                              ? '1px solid #3E3E3E' 
+                              : '1px solid #343434',
+                          borderRadius: '12px',
+                          textAlign: 'left',
+                          cursor: isUnlocked ? 'pointer' : 'not-allowed',
+                          opacity: isUnlocked ? 1 : 0.5,
+                          transition: 'all 0.2s',
+                          position: 'relative'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (isUnlocked && !isCompleted) {
+                            e.currentTarget.style.background = '#343434';
+                            e.currentTarget.style.borderColor = '#D97757';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (isUnlocked && !isCompleted) {
+                            e.currentTarget.style.background = '#2C2C2C';
+                            e.currentTarget.style.borderColor = '#3E3E3E';
+                          }
+                        }}
+                      >
+                        {/* Status Icon */}
+                        <div style={{
+                          position: 'absolute',
+                          top: '16px',
+                          right: '16px'
+                        }}>
+                          {isCompleted ? (
+                            <div style={{
+                              width: '24px',
+                              height: '24px',
+                              background: '#10B981',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <Check size={14} color="white" strokeWidth={3} />
+                            </div>
+                          ) : !isUnlocked ? (
+                            <div style={{
+                              width: '24px',
+                              height: '24px',
+                              background: '#3E3E3E',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <Lock size={12} color="#737373" />
+                            </div>
+                          ) : (
+                            <ChevronRight size={20} color="#737373" />
+                          )}
+                        </div>
+
+                        {/* Content */}
+                        <h3 style={{
+                          fontSize: '16px',
+                          fontWeight: '600',
+                          color: isUnlocked ? '#FFFFFF' : '#4E4E4E',
+                          marginBottom: '8px',
+                          paddingRight: '32px'
+                        }}>
+                          {skill.title}
+                        </h3>
+
+                        <p style={{
+                          fontSize: '14px',
+                          color: isUnlocked ? '#A3A3A3' : '#4E4E4E',
+                          lineHeight: '1.5',
+                          marginBottom: '12px'
+                        }}>
+                          {skill.description}
+                        </p>
+
+                        {/* Difficulty */}
+                        <div style={{
+                          fontSize: '12px',
+                          color: '#737373'
+                        }}>
+                          {difficultyDots}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import ChatMessage from './ChatMessage';
 import { ConversationMessage } from '@/types';
-import { Send, ArrowUp, Lightbulb, Sparkles } from 'lucide-react';
+import { Claude } from '@lobehub/icons';
+import { Send, ArrowUp, Lightbulb } from 'lucide-react';
 
 interface MentorChatProps {
   messages: ConversationMessage[];
@@ -85,7 +86,7 @@ export default function MentorChat({
                 <div className="max-w-3xl mx-auto px-4 py-6">
                   <div className="flex gap-4">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-claude-orange to-amber-600 flex items-center justify-center">
-                      <Sparkles className="w-5 h-5 text-white" />
+                      <Claude size={20} color="white" />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 text-claude-text-secondary text-sm">

@@ -1,39 +1,59 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getChallengeById } from '@/lib/challenges';
-import { Challenge, ConversationMessage } from '@/types';
-import { constructInitialMessage } from '@/lib/systemPrompts';
-import { ArrowLeft, Target, Code2, User, Sparkles, Lightbulb, ArrowUp } from 'lucide-react';
+import { getSkillById } from '@/lib/skills';
+import { Skill } from '@/lib/skills';
+import { ConversationMessage } from '@/types';
+import { Claude } from '@lobehub/icons';
+import {
+  ChevronLeft,
+  User,
+  Lightbulb,
+  Send,
+  CheckCircle2,
+  BookOpen,
+  Target,
+  Trophy,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react';
 
 export default function ChallengePage() {
   const params = useParams();
   const router = useRouter();
-  const challengeId = params.id as string;
+  const skillId = params.id as string;
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const [challenge, setChallenge] = useState<Challenge | null>(null);
-  const [currentCode, setCurrentCode] = useState<string>('');
+  const [skill, setSkill] = useState<Skill | null>(null);
   const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
-  const [hintLevel, setHintLevel] = useState<1 | 2 | 3>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [input, setInput] = useState('');
-  const [conceptsMastered] = useState<string[]>([]);
+  const [showExplanation, setShowExplanation] = useState(true);
+  const [showExample, setShowExample] = useState(false);
+  const [hintIndex, setHintIndex] = useState(0);
+  const [completed, setCompleted] = useState(false);
 
   useEffect(() => {
-    const loadedChallenge = getChallengeById(challengeId);
-    if (!loadedChallenge) {
+    const loadedSkill = getSkillById(skillId);
+    if (!loadedSkill) {
       router.push('/dashboard');
       return;
     }
     
-    setChallenge(loadedChallenge);
-    setCurrentCode(loadedChallenge.starterCode.typescript || '');
+    setSkill(loadedSkill);
 
-    const initialMsg = constructInitialMessage(
-      loadedChallenge.title,
-      loadedChallenge.description
-    );
+    // Initial coaching message
+    const initialMsg = `Welcome to the **${loadedSkill.title}** challenge! 🎯
+
+${loadedSkill.objective}
+
+I'm here to coach you through this. When you're ready, try crafting a prompt using the technique we're learning. I'll give you feedback and help you improve it.
+
+**Your task:**
+${loadedSkill.task}
+
+Take your time, experiment, and ask me questions if you get stuck!`;
     
     setConversationHistory([
       {
@@ -42,10 +62,14 @@ export default function ChallengePage() {
         timestamp: Date.now(),
       }
     ]);
-  }, [challengeId, router]);
+  }, [skillId, router]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [conversationHistory]);
 
   const handleSendMessage = async (message: string) => {
-    if (!challenge) return;
+    if (!skill) return;
 
     const userMessage: ConversationMessage = {
       role: 'user',
@@ -58,6 +82,24 @@ export default function ChallengePage() {
     setIsLoading(true);
 
     try {
+      // Build coaching system prompt
+      const systemPrompt = `You are a Claude mastery coach helping users learn advanced prompting techniques.
+
+Current skill being learned: ${skill.title}
+Skill description: ${skill.description}
+
+Success criteria the user should meet:
+${skill.successCriteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}
+
+Your role:
+- Evaluate if the user's prompt uses the technique correctly
+- Give constructive feedback on how to improve
+- Don't write the prompt for them - guide them to improve it themselves
+- Celebrate when they use the technique well
+- If they meet all success criteria, enthusiastically confirm their mastery
+
+Be encouraging and specific in your feedback. Use examples from their prompt to explain what's working and what could be better.`;
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,12 +110,12 @@ export default function ChallengePage() {
             content: msg.content,
           })),
           challengeContext: {
-            title: challenge.title,
-            learningObjectives: challenge.learningObjectives,
-            concepts: challenge.concepts,
-            currentCode,
-            hintLevel,
-            conceptsMastered,
+            title: skill.title,
+            learningObjectives: skill.learningPoints,
+            concepts: [{ name: skill.title }],
+            currentCode: systemPrompt,
+            hintLevel: 1,
+            conceptsMastered: [],
           },
         }),
       });
@@ -88,6 +130,13 @@ export default function ChallengePage() {
         };
 
         setConversationHistory([...newHistory, assistantMessage]);
+
+        // Check for completion keywords (simple heuristic)
+        if (data.message.toLowerCase().includes('mastery') || 
+            data.message.toLowerCase().includes('excellent work') ||
+            data.message.toLowerCase().includes('perfect')) {
+          setTimeout(() => setCompleted(true), 1000);
+        }
       } else {
         throw new Error(data.error || 'Failed to get response');
       }
@@ -112,227 +161,385 @@ export default function ChallengePage() {
     setInput('');
   };
 
-  const handleRequestHint = () => {
-    if (hintLevel < 3) {
-      const newLevel = (hintLevel + 1) as 1 | 2 | 3;
-      setHintLevel(newLevel);
-      handleSendMessage("I'm stuck and need a hint to move forward.");
-    }
+  const showHint = () => {
+    if (!skill || hintIndex >= skill.hints.length) return;
+    
+    const hintMsg: ConversationMessage = {
+      role: 'assistant',
+      content: `💡 **Hint ${hintIndex + 1}:** ${skill.hints[hintIndex]}`,
+      timestamp: Date.now(),
+    };
+    
+    setConversationHistory([...conversationHistory, hintMsg]);
+    setHintIndex(hintIndex + 1);
   };
 
-  if (!challenge) {
+  if (!skill) {
     return (
       <div style={{ 
         minHeight: '100vh', 
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center',
-        background: '#1A1A1A',
-        color: '#8C8C8C'
+        background: '#1E1E1E',
+        color: '#737373'
       }}>
-        Loading challenge...
+        <div style={{ textAlign: 'center' }}>
+          <Claude size={32} color="#737373" style={{ margin: '0 auto 12px' }} />
+          <div>Loading challenge...</div>
+        </div>
       </div>
     );
   }
 
-  const getDifficultyColor = () => {
-    if (challenge.difficulty === 1) return { bg: '#1A3A2A', text: '#6EE7B7', border: '#2D5A3F' };
-    if (challenge.difficulty === 2) return { bg: '#3A2F1A', text: '#FCD34D', border: '#5A4A2D' };
-    return { bg: '#3A1A1A', text: '#FCA5A5', border: '#5A2D2D' };
-  };
-
-  const getDifficultyText = () => {
-    if (challenge.difficulty === 1) return 'Easy';
-    if (challenge.difficulty === 2) return 'Medium';
-    return 'Hard';
-  };
-
-  const colors = getDifficultyColor();
+  const difficultyDots = Array(skill.difficulty).fill('●').join('');
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#1A1A1A' }}>
-      {/* Header - Dark */}
+    <div style={{ 
+      minHeight: '100vh',
+      background: '#1E1E1E',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      {/* Header */}
       <header style={{
-        background: '#212121',
-        borderBottom: '1px solid #2D2D2D',
-        padding: '12px 24px'
+        background: '#2C2C2C',
+        borderBottom: '1px solid #3E3E3E',
+        padding: '12px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexShrink: 0
       }}>
-        <div style={{ 
-          maxWidth: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button
-              onClick={() => router.push('/dashboard')}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#A3A3A3',
-                cursor: 'pointer',
-                padding: '6px 8px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '14px',
-                borderRadius: '6px',
-                transition: 'background 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#2A2A2A'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              <ArrowLeft size={16} />
-              Back
-            </button>
-            <div style={{ width: '1px', height: '20px', background: '#2D2D2D' }} />
-            <div style={{
-              width: '28px',
-              height: '28px',
-              background: 'linear-gradient(135deg, #CC785C, #D4926F)',
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontWeight: 'bold',
-              fontSize: '16px'
-            }}>
-              P
-            </div>
-            <span style={{ fontSize: '18px', fontWeight: '500', color: '#E5E5E5' }}>
-              Pair
-            </span>
-          </div>
-        </div>
-      </header>
-
-      {/* Challenge Header - Dark */}
-      <div style={{ 
-        background: '#212121', 
-        borderBottom: '1px solid #2D2D2D',
-        padding: '20px 24px'
-      }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-            <h1 style={{ fontSize: '22px', fontWeight: '500', color: '#FFFFFF', margin: 0 }}>
-              {challenge.title}
-            </h1>
-            <span style={{
-              fontSize: '11px',
-              fontWeight: '500',
-              padding: '4px 10px',
-              borderRadius: '5px',
-              background: colors.bg,
-              color: colors.text,
-              border: `1px solid ${colors.border}`
-            }}>
-              {getDifficultyText()}
-            </span>
-          </div>
-          
-          <p style={{ fontSize: '14px', color: '#A3A3A3', marginBottom: '12px', lineHeight: '1.6' }}>
-            {challenge.description.split('\n\n')[0]}
-          </p>
-
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '6px',
-            padding: '10px',
-            background: '#2A2A2A',
-            borderRadius: '8px',
-            border: '1px solid #3A3A3A'
-          }}>
-            <Target size={14} color="#8C8C8C" />
-            <span style={{ fontSize: '13px', color: '#8C8C8C', marginRight: '8px' }}>Learning objectives:</span>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {challenge.learningObjectives.map((obj, idx) => (
-                <span
-                  key={idx}
-                  style={{
-                    fontSize: '12px',
-                    background: '#1A1A1A',
-                    color: '#B3B3B3',
-                    padding: '4px 9px',
-                    borderRadius: '5px',
-                    border: '1px solid #2D2D2D'
-                  }}
-                >
-                  {obj}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Split View - Dark */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* Left: Code Editor */}
-        <div style={{ width: '50%', borderRight: '1px solid #2D2D2D', display: 'flex', flexDirection: 'column', background: '#1A1A1A' }}>
-          <div style={{ 
-            padding: '12px 16px', 
-            borderBottom: '1px solid #2D2D2D',
-            background: '#212121',
+        <button
+          onClick={() => router.push('/dashboard')}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: '#A3A3A3',
+            cursor: 'pointer',
+            padding: '6px 10px',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px',
+            fontSize: '14px',
+            borderRadius: '6px',
+            transition: 'background 0.2s'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = '#3A3A3A'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+        >
+          <ChevronLeft size={16} />
+          Back to skill tree
+        </button>
+
+        <div style={{ 
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <Claude.Color size={18} />
+          <span style={{
+            fontSize: '15px',
+            color: '#FFFFFF',
+            fontWeight: '500'
           }}>
-            <Code2 size={14} color="#A3A3A3" />
-            <span style={{ fontSize: '13px', color: '#A3A3A3' }}>Your Code</span>
-          </div>
-          <textarea
-            value={currentCode}
-            onChange={(e) => setCurrentCode(e.target.value)}
-            style={{
-              flex: 1,
-              background: '#1A1A1A',
-              color: '#E5E5E5',
-              border: 'none',
-              padding: '16px',
-              fontFamily: 'SF Mono, Monaco, Consolas, monospace',
-              fontSize: '14px',
-              lineHeight: '1.6',
-              resize: 'none',
-              outline: 'none'
-            }}
-            spellCheck={false}
-          />
+            {skill.title}
+          </span>
+          <span style={{
+            fontSize: '12px',
+            color: '#737373'
+          }}>
+            {difficultyDots}
+          </span>
         </div>
 
-        {/* Right: Chat */}
-        <div style={{ width: '50%', display: 'flex', flexDirection: 'column', background: '#1A1A1A' }}>
-          {/* Messages */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-            {conversationHistory.map((msg, idx) => {
-              const isUser = msg.role === 'user';
-              return (
-                <div key={idx} style={{ marginBottom: '20px' }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    gap: '12px',
-                    alignItems: 'flex-start'
+        <div style={{ width: '120px' }} />
+      </header>
+
+      {/* Main Content */}
+      <div style={{ 
+        flex: 1,
+        overflowY: 'auto',
+        display: 'flex'
+      }}>
+        {/* Left Sidebar - Challenge Info */}
+        <div style={{
+          width: '360px',
+          background: '#2C2C2C',
+          borderRight: '1px solid #3E3E3E',
+          overflowY: 'auto',
+          flexShrink: 0
+        }}>
+          <div style={{ padding: '24px' }}>
+            {/* Objective */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '12px'
+              }}>
+                <Target size={16} color="#D97757" />
+                <h3 style={{
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#FFFFFF',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  margin: 0
+                }}>
+                  Objective
+                </h3>
+              </div>
+              <p style={{
+                fontSize: '14px',
+                color: '#E5E5E5',
+                lineHeight: '1.6',
+                margin: 0
+              }}>
+                {skill.objective}
+              </p>
+            </div>
+
+            {/* Explanation - Collapsible */}
+            <div style={{ marginBottom: '24px' }}>
+              <button
+                onClick={() => setShowExplanation(!showExplanation)}
+                style={{
+                  width: '100%',
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  marginBottom: '12px'
+                }}
+              >
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <BookOpen size={16} color="#3B82F6" />
+                  <h3 style={{
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#FFFFFF',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    margin: 0
                   }}>
+                    Learn
+                  </h3>
+                </div>
+                {showExplanation ? (
+                  <ChevronUp size={16} color="#737373" />
+                ) : (
+                  <ChevronDown size={16} color="#737373" />
+                )}
+              </button>
+
+              {showExplanation && (
+                <div style={{
+                  fontSize: '14px',
+                  color: '#A3A3A3',
+                  lineHeight: '1.6',
+                  whiteSpace: 'pre-wrap'
+                }}>
+                  {skill.explanation}
+                </div>
+              )}
+            </div>
+
+            {/* Success Criteria */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '12px'
+              }}>
+                <CheckCircle2 size={16} color="#10B981" />
+                <h3 style={{
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#FFFFFF',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  margin: 0
+                }}>
+                  Success Criteria
+                </h3>
+              </div>
+              <ul style={{
+                margin: 0,
+                paddingLeft: '20px',
+                fontSize: '14px',
+                color: '#A3A3A3',
+                lineHeight: '1.8'
+              }}>
+                {skill.successCriteria.map((criteria, idx) => (
+                  <li key={idx}>{criteria}</li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Example - Collapsible */}
+            {skill.examplePrompt && (
+              <div style={{ marginBottom: '24px' }}>
+                <button
+                  onClick={() => setShowExample(!showExample)}
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    border: 'none',
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    marginBottom: '12px'
+                  }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <Claude.Color size={16} />
+                    <h3 style={{
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#FFFFFF',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      margin: 0
+                    }}>
+                      Example
+                    </h3>
+                  </div>
+                  {showExample ? (
+                    <ChevronUp size={16} color="#737373" />
+                  ) : (
+                    <ChevronDown size={16} color="#737373" />
+                  )}
+                </button>
+
+                {showExample && (
+                  <div style={{
+                    fontSize: '13px',
+                    color: '#A3A3A3',
+                    lineHeight: '1.6',
+                    whiteSpace: 'pre-wrap',
+                    background: '#343434',
+                    border: '1px solid #3E3E3E',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    fontFamily: 'monospace'
+                  }}>
+                    {skill.examplePrompt}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Hint Button */}
+            {hintIndex < skill.hints.length && (
+              <button
+                onClick={showHint}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: '#3E3E3E',
+                  border: '1px solid #4E4E4E',
+                  borderRadius: '8px',
+                  color: '#FFFFFF',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#333333';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#3E3E3E';
+                }}
+              >
+                <Lightbulb size={16} />
+                Get a hint ({skill.hints.length - hintIndex} remaining)
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Right Side - Conversation */}
+        <div style={{ 
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          {/* Messages */}
+          <div style={{ 
+            flex: 1, 
+            overflowY: 'auto',
+            padding: '32px'
+          }}>
+            <div style={{
+              maxWidth: '720px',
+              margin: '0 auto'
+            }}>
+              {conversationHistory.map((msg, idx) => {
+                const isUser = msg.role === 'user';
+                return (
+                  <div 
+                    key={idx}
+                    style={{
+                      marginBottom: '24px',
+                      display: 'flex',
+                      gap: '16px',
+                      alignItems: 'flex-start'
+                    }}
+                  >
+                    {/* Avatar */}
                     <div style={{
-                      width: '32px',
-                      height: '32px',
+                      width: '36px',
+                      height: '36px',
                       borderRadius: '50%',
-                      background: isUser ? '#3A3A3A' : 'linear-gradient(135deg, #CC785C, #D4926F)',
+                      background: isUser 
+                        ? '#3E3E3E'
+                        : 'linear-gradient(135deg, #D97757 0%, #C9653E 100%)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      flexShrink: 0
+                      flexShrink: 0,
+                      boxShadow: isUser ? 'none' : '0 2px 8px rgba(217, 119, 87, 0.3)'
                     }}>
-                      {isUser ? <User size={16} color="#E5E5E5" /> : <Sparkles size={16} color="white" />}
+                      {isUser
+                        ? <User size={18} color="#A3A3A3" strokeWidth={2} />
+                        : <Claude size={18} color="white" />
+                      }
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '12px', color: '#8C8C8C', marginBottom: '4px' }}>
-                        {isUser ? 'You' : 'Pair'}
+
+                    {/* Content */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontSize: '13px',
+                        color: '#737373',
+                        marginBottom: '6px',
+                        fontWeight: '500'
+                      }}>
+                        {isUser ? 'You' : 'Coach'}
                       </div>
-                      <div style={{ 
-                        fontSize: '14px', 
-                        color: '#E5E5E5', 
+                      <div style={{
+                        fontSize: '15px',
+                        color: '#E5E5E5',
                         lineHeight: '1.6',
                         whiteSpace: 'pre-wrap'
                       }}>
@@ -340,139 +547,289 @@ export default function ChallengePage() {
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-            {isLoading && (
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                );
+              })}
+
+              {/* Loading State */}
+              {isLoading && (
                 <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #CC785C, #D4926F)',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
+                  gap: '16px',
+                  alignItems: 'flex-start',
+                  marginBottom: '24px'
                 }}>
-                  <Sparkles size={16} color="white" />
-                </div>
-                <div style={{ fontSize: '14px', color: '#8C8C8C' }}>
-                  Pair is thinking...
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Hint Banner */}
-          {hintLevel > 1 && (
-            <div style={{
-              padding: '10px 16px',
-              background: '#3A2F1A',
-              borderTop: '1px solid #5A4A2D',
-              borderBottom: '1px solid #5A4A2D',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Lightbulb size={14} color="#FCD34D" />
-                <span style={{ fontSize: '13px', color: '#FCD34D' }}>
-                  Hint level: {hintLevel}/3
-                </span>
-              </div>
-              {hintLevel < 3 && (
-                <button
-                  onClick={handleRequestHint}
-                  disabled={isLoading}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#FCD34D',
-                    fontSize: '13px',
-                    cursor: isLoading ? 'not-allowed' : 'pointer',
-                    opacity: isLoading ? 0.5 : 1
-                  }}
-                >
-                  Need more help?
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Input */}
-          <form onSubmit={handleSubmit} style={{ 
-            padding: '16px',
-            borderTop: '1px solid #2D2D2D',
-            background: '#212121'
-          }}>
-            <div style={{ 
-              display: 'flex', 
-              gap: '8px',
-              background: '#2A2A2A',
-              borderRadius: '10px',
-              border: '1px solid #3A3A3A',
-              padding: '8px'
-            }}>
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Reply to Pair..."
-                disabled={isLoading}
-                style={{
-                  flex: 1,
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#E5E5E5',
-                  fontSize: '14px',
-                  outline: 'none',
-                  padding: '4px 8px'
-                }}
-              />
-              {hintLevel < 3 && (
-                <button
-                  type="button"
-                  onClick={handleRequestHint}
-                  disabled={isLoading}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#A3A3A3',
-                    cursor: isLoading ? 'not-allowed' : 'pointer',
-                    padding: '4px 8px',
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #D97757 0%, #C9653E 100%)',
                     display: 'flex',
                     alignItems: 'center',
-                    borderRadius: '6px',
-                    transition: 'background 0.2s'
-                  }}
-                  onMouseEnter={(e) => !isLoading && (e.currentTarget.style.background = '#3A3A3A')}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  <Lightbulb size={16} />
-                </button>
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 8px rgba(217, 119, 87, 0.3)'
+                  }}>
+                    <Claude size={18} color="white" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      fontSize: '13px',
+                      color: '#737373',
+                      marginBottom: '6px',
+                      fontWeight: '500'
+                    }}>
+                      Coach
+                    </div>
+                    <div style={{
+                      fontSize: '15px',
+                      color: '#737373',
+                      display: 'flex',
+                      gap: '6px',
+                      alignItems: 'center'
+                    }}>
+                      <div style={{ 
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: '#737373',
+                        animation: 'pulse 1.5s ease-in-out infinite'
+                      }} />
+                      <div style={{ 
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: '#737373',
+                        animation: 'pulse 1.5s ease-in-out 0.2s infinite'
+                      }} />
+                      <div style={{ 
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: '#737373',
+                        animation: 'pulse 1.5s ease-in-out 0.4s infinite'
+                      }} />
+                    </div>
+                  </div>
+                </div>
               )}
-              <button
-                type="submit"
-                disabled={isLoading || !input.trim()}
-                style={{
-                  background: '#CC785C',
-                  border: 'none',
-                  color: 'white',
-                  borderRadius: '6px',
-                  padding: '6px 12px',
-                  cursor: (isLoading || !input.trim()) ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: (isLoading || !input.trim()) ? 0.5 : 1
-                }}
-              >
-                <ArrowUp size={16} />
-              </button>
+
+              <div ref={messagesEndRef} />
             </div>
-          </form>
+          </div>
+
+          {/* Input Area */}
+          <div style={{
+            borderTop: '1px solid #3E3E3E',
+            background: '#2C2C2C',
+            padding: '16px 32px 24px',
+            flexShrink: 0
+          }}>
+            <div style={{
+              maxWidth: '720px',
+              margin: '0 auto'
+            }}>
+              <form onSubmit={handleSubmit}>
+                <div style={{
+                  background: '#1E1E1E',
+                  border: '1px solid #3E3E3E',
+                  borderRadius: '12px',
+                  padding: '12px',
+                  display: 'flex',
+                  gap: '8px',
+                  alignItems: 'flex-end',
+                  transition: 'border-color 0.2s'
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#D97757'}
+                onBlur={(e) => e.currentTarget.style.borderColor = '#3E3E3E'}
+                >
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSubmit(e);
+                      }
+                    }}
+                    placeholder="Share your prompt attempt or ask for guidance..."
+                    disabled={isLoading}
+                    style={{
+                      flex: 1,
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#E5E5E5',
+                      fontSize: '15px',
+                      outline: 'none',
+                      resize: 'none',
+                      minHeight: '24px',
+                      maxHeight: '200px',
+                      fontFamily: 'inherit',
+                      lineHeight: '1.5'
+                    }}
+                    rows={1}
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={isLoading || !input.trim()}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      background: (isLoading || !input.trim()) ? '#3E3E3E' : '#D97757',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white',
+                      cursor: (isLoading || !input.trim()) ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s',
+                      flexShrink: 0,
+                      opacity: (isLoading || !input.trim()) ? 0.5 : 1
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isLoading && input.trim()) {
+                        e.currentTarget.style.background = '#E89A7B';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isLoading && input.trim()) {
+                        e.currentTarget.style.background = '#D97757';
+                      }
+                    }}
+                  >
+                    <Send size={16} />
+                  </button>
+                </div>
+
+                <div style={{
+                  marginTop: '8px',
+                  fontSize: '12px',
+                  color: '#737373',
+                  textAlign: 'center'
+                }}>
+                  Share your prompt attempt and I'll give you feedback
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Completion Modal */}
+      {completed && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: '#2C2C2C',
+            border: '1px solid #3E3E3E',
+            borderRadius: '16px',
+            padding: '40px',
+            maxWidth: '480px',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              width: '80px',
+              height: '80px',
+              background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 24px',
+              boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)'
+            }}>
+              <Trophy size={40} color="white" strokeWidth={2} />
+            </div>
+
+            <h2 style={{
+              fontSize: '28px',
+              fontWeight: '600',
+              color: '#FFFFFF',
+              marginBottom: '12px'
+            }}>
+              Skill Mastered!
+            </h2>
+
+            <p style={{
+              fontSize: '16px',
+              color: '#A3A3A3',
+              lineHeight: '1.6',
+              marginBottom: '24px'
+            }}>
+              You've successfully mastered <strong style={{ color: '#10B981' }}>{skill.title}</strong>. 
+              This technique will help you get better results from Claude.
+            </p>
+
+            <div style={{
+              background: '#343434',
+              border: '1px solid #3E3E3E',
+              borderRadius: '12px',
+              padding: '20px',
+              marginBottom: '24px',
+              textAlign: 'left'
+            }}>
+              <div style={{
+                fontSize: '13px',
+                fontWeight: '600',
+                color: '#FFFFFF',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                marginBottom: '12px'
+              }}>
+                Key Takeaways
+              </div>
+              <ul style={{
+                margin: 0,
+                paddingLeft: '20px',
+                fontSize: '14px',
+                color: '#A3A3A3',
+                lineHeight: '1.8'
+              }}>
+                {skill.learningPoints.map((point, idx) => (
+                  <li key={idx}>{point}</li>
+                ))}
+              </ul>
+            </div>
+
+            <button
+              onClick={() => router.push('/dashboard')}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: '#D97757',
+                border: 'none',
+                borderRadius: '10px',
+                color: 'white',
+                fontSize: '15px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#E89A7B'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#D97757'}
+            >
+              Continue Learning
+            </button>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

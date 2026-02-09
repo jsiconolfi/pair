@@ -1,7 +1,8 @@
 'use client';
 
 import { Challenge } from '@/types';
-import { Target, Sparkles } from 'lucide-react';
+import { Claude } from '@lobehub/icons';
+import { Target } from 'lucide-react';
 
 interface ChallengeHeaderProps {
   challenge: Challenge;
@@ -57,7 +58,7 @@ export default function ChallengeHeader({ challenge }: ChallengeHeaderProps) {
                   key={idx}
                   className="inline-flex items-center gap-1 text-xs bg-white px-2.5 py-1 rounded-md border border-claude text-claude-text-secondary"
                 >
-                  <Sparkles className="w-3 h-3" />
+                  <Claude size={12} />
                   {obj}
                 </span>
               ))}

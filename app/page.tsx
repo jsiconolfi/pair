@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles } from 'lucide-react';
+import { Claude } from '@lobehub/icons';
 
 export default function Home() {
   const router = useRouter();
@@ -30,7 +30,7 @@ export default function Home() {
           alignItems: 'center',
           justifyContent: 'center'
         }}>
-          <Sparkles size={32} color="white" />
+          <Claude size={32} color="white" />
         </div>
         <div style={{ fontSize: '24px', fontWeight: '500', color: '#FFFFFF', marginBottom: '8px' }}>Pair</div>
         <div style={{ fontSize: '14px', color: '#8C8C8C' }}>Loading...</div>

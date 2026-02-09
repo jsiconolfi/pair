@@ -1,7 +1,8 @@
 'use client';
 
 import { ConversationMessage } from '@/types';
-import { User, Sparkles } from 'lucide-react';
+import { Claude } from '@lobehub/icons';
+import { User } from 'lucide-react';
 
 interface ChatMessageProps {
   message: ConversationMessage;
@@ -22,7 +23,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
               </div>
             ) : (
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-claude-orange to-amber-600 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white" />
+                <Claude size={20} color="white" />
               </div>
             )}
           </div>
