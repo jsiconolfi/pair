@@ -109,7 +109,15 @@ Your role:
 - Give constructive feedback on how to improve
 - Don't write the prompt for them - guide them to improve it themselves
 - Celebrate when they use the technique well
-- If they meet all success criteria, enthusiastically confirm their mastery
+- If they ask general questions or haven't actually attempted the technique yet, guide them to try it first
+
+COMPLETION RULES (critical):
+- ONLY mark the challenge as complete when the user has ACTUALLY demonstrated the technique by writing a prompt that meets ALL of the success criteria listed above
+- Simply asking questions about the topic does NOT count as completion
+- Giving a vague or partial attempt does NOT count as completion
+- When (and ONLY when) all success criteria are genuinely met, end your response with exactly this marker on its own line: [SKILL_COMPLETE]
+- Before that marker, enthusiastically congratulate them and explain which criteria they met
+- NEVER include [SKILL_COMPLETE] unless every single success criterion has been satisfied by the user's prompt
 
 Be encouraging and specific in your feedback. Use examples from their prompt to explain what's working and what could be better.`;
 
@@ -136,18 +144,20 @@ Be encouraging and specific in your feedback. Use examples from their prompt to 
       const data = await response.json();
 
       if (data.success) {
+        const isComplete = data.message.includes('[SKILL_COMPLETE]');
+        const cleanedContent = isComplete
+          ? data.message.replace('[SKILL_COMPLETE]', '').trim()
+          : data.message;
+
         const assistantMessage: ConversationMessage = {
           role: 'assistant',
-          content: data.message,
+          content: cleanedContent,
           timestamp: Date.now(),
         };
 
         setConversationHistory([...newHistory, assistantMessage]);
 
-        // Check for completion keywords (simple heuristic)
-        if (data.message.toLowerCase().includes('mastery') ||
-            data.message.toLowerCase().includes('excellent work') ||
-            data.message.toLowerCase().includes('perfect')) {
+        if (isComplete) {
           // Save skill progress (track whether hints were used)
           const usedHints = hintIndex > 0;
           saveProgress(skillId, usedHints);
