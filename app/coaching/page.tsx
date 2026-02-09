@@ -3,11 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Claude } from '@lobehub/icons';
-import { 
-  Lightbulb, 
+import {
+  Lightbulb,
   ChevronLeft,
-  Target, 
-  Zap, 
+  Target,
+  Zap,
   BookOpen,
   ArrowUp,
   CheckCircle2,
@@ -16,6 +16,9 @@ import {
   ExternalLink,
   Check
 } from 'lucide-react';
+import Loading from '@/components/Loading';
+import Toast from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
 
 interface Suggestion {
   id: string;
@@ -35,7 +38,9 @@ interface Message {
 
 export default function CoachingDemo() {
   const router = useRouter();
+  const { toasts, removeToast, success, error: showError } = useToast();
   const [userPrompt, setUserPrompt] = useState('');
+
   const [conversation, setConversation] = useState<Message[]>([]);
   const [currentSuggestions, setCurrentSuggestions] = useState<Suggestion[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -119,7 +124,7 @@ export default function CoachingDemo() {
       }
     } catch (error: any) {
       console.error('Error analyzing prompt:', error);
-      setError(error.message || 'Failed to analyze prompt. Please try again.');
+      showError(error.message || 'Failed to analyze prompt');
       setCurrentSuggestions([]);
     } finally {
       setIsAnalyzing(false);
@@ -129,6 +134,7 @@ export default function CoachingDemo() {
   const handleCopyAndOpen = (suggestion: Suggestion) => {
     if (suggestion.improvedPrompt) {
       navigator.clipboard.writeText(suggestion.improvedPrompt);
+      success('Prompt copied to clipboard!');
       setCopiedId(suggestion.id);
       setTimeout(() => {
         window.open('https://claude.ai/new', '_blank');
@@ -227,7 +233,7 @@ export default function CoachingDemo() {
               color: '#FFFFFF',
               fontWeight: '500'
             }}>
-              Live Coaching
+              Prompt Coaching
             </span>
           </div>
 
@@ -430,7 +436,7 @@ export default function CoachingDemo() {
                   marginBottom: '12px',
                   letterSpacing: '-0.02em'
                 }}>
-                  Live Coaching
+                  Prompt Coaching
                 </h1>
 
                 <p style={{
@@ -507,6 +513,15 @@ export default function CoachingDemo() {
                     </div>
                   </div>
                 ))}
+                {isAnalyzing && (
+                  <div style={{
+                    padding: '20px',
+                    display: 'flex',
+                    justifyContent: 'center'
+                  }}>
+                    <Loading message="Claude is analyzing your prompt..." size="small" />
+                  </div>
+                )}
                 <div ref={messagesEndRef} />
               </div>
             )}
@@ -956,6 +971,16 @@ export default function CoachingDemo() {
           </div>
         </div>
       </div>
+
+      {/* Toast Notifications */}
+      {toasts.map(toast => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => removeToast(toast.id)}
+        />
+      ))}
 
       <style>{`
         @keyframes spin {

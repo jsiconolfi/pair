@@ -1,11 +1,13 @@
 // lib/achievements.ts
 
+import { UserProgress } from './storage';
+
 export interface Achievement {
   id: string;
   title: string;
   description: string;
   icon: string;
-  requirement: (completed: string[]) => boolean;
+  requirement: (progress: UserProgress) => boolean;
 }
 
 export const achievements: Achievement[] = [
@@ -14,16 +16,16 @@ export const achievements: Achievement[] = [
     title: 'Getting Started',
     description: 'Complete your first skill',
     icon: '🎯',
-    requirement: (completed: string[]) => completed.length >= 1
+    requirement: (progress) => progress.completedSkills.length >= 1
   },
   {
     id: 'prompting-master',
     title: 'Prompting Pro',
     description: 'Master all basic prompting techniques',
     icon: '🏆',
-    requirement: (completed: string[]) => {
+    requirement: (progress) => {
       const promptingSkills = ['xml-tags', 'few-shot', 'role-prompting'];
-      return promptingSkills.every(s => completed.includes(s));
+      return promptingSkills.every(s => progress.completedSkills.includes(s));
     }
   },
   {
@@ -31,9 +33,9 @@ export const achievements: Achievement[] = [
     title: 'Advanced Learner',
     description: 'Complete a difficulty 2 challenge',
     icon: '⚡',
-    requirement: (completed: string[]) => {
+    requirement: (progress) => {
       const advancedSkills = ['chain-of-thought', 'projects-intro'];
-      return advancedSkills.some(s => completed.includes(s));
+      return advancedSkills.some(s => progress.completedSkills.includes(s));
     }
   },
   {
@@ -41,24 +43,57 @@ export const achievements: Achievement[] = [
     title: 'Completionist',
     description: 'Master all available skills',
     icon: '💯',
-    requirement: (completed: string[]) => completed.length >= 5
+    requirement: (progress) => progress.completedSkills.length >= 5
   },
   {
     id: 'quick-learner',
     title: 'Quick Learner',
     description: 'Complete 3 skills',
     icon: '🚀',
-    requirement: (completed: string[]) => completed.length >= 3
+    requirement: (progress) => progress.completedSkills.length >= 3
+  },
+  {
+    id: 'night-owl',
+    title: 'Night Owl',
+    description: 'Complete a challenge after 10 PM',
+    icon: '🦉',
+    requirement: (progress) => {
+      return Object.values(progress.completionTimestamps).some(ts => {
+        const hour = new Date(ts).getHours();
+        return hour >= 22 || hour < 5;
+      });
+    }
+  },
+  {
+    id: 'perfectionist',
+    title: 'Perfectionist',
+    description: 'Complete a challenge without using any hints',
+    icon: '💎',
+    requirement: (progress) => progress.noHintSkills.length >= 1
+  },
+  {
+    id: 'streak-master',
+    title: 'Streak Master',
+    description: 'Complete challenges on 3 different days',
+    icon: '🔥',
+    requirement: (progress) => {
+      const days = new Set(
+        Object.values(progress.completionTimestamps).map(ts =>
+          new Date(ts).toDateString()
+        )
+      );
+      return days.size >= 3;
+    }
   },
 ];
 
-export function checkAchievements(completed: string[]): string[] {
+export function checkAchievements(progress: UserProgress): string[] {
   return achievements
-    .filter(a => a.requirement(completed))
+    .filter(a => a.requirement(progress))
     .map(a => a.id);
 }
 
-export function getNewAchievements(completed: string[], previous: string[]): Achievement[] {
-  const newIds = checkAchievements(completed).filter(id => !previous.includes(id));
+export function getNewAchievements(progress: UserProgress, previousAchievements: string[]): Achievement[] {
+  const newIds = checkAchievements(progress).filter(id => !previousAchievements.includes(id));
   return achievements.filter(a => newIds.includes(a.id));
 }

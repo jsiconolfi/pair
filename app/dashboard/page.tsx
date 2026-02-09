@@ -20,21 +20,33 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { skills } from '@/lib/skills';
-import { getProgress, isOnboarded, markOnboarded } from '@/lib/storage';
+import { UserProgress, getProgress, isOnboarded, markOnboarded } from '@/lib/storage';
 import { achievements, checkAchievements } from '@/lib/achievements';
+import { useAchievements } from '@/hooks/useAchievements';
+import AchievementUnlockNotification from '@/components/AchievementUnlockNotification';
+import Button from '@/components/Button';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [progress, setProgress] = useState(getProgress());
+  const [progress, setProgress] = useState<UserProgress>({
+    completedSkills: [],
+    unlockedSkills: [],
+    achievements: [],
+    lastVisit: 0,
+    completionTimestamps: {},
+    noHintSkills: []
+  });
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
+  const { notifications, checkForNewAchievements, dismissNotification } = useAchievements();
 
   useEffect(() => {
     if (!isOnboarded()) {
       setShowOnboarding(true);
     }
     setProgress(getProgress());
-  }, []);
+    checkForNewAchievements();
+  }, [checkForNewAchievements]);
 
   const categories = {
     prompting: { title: 'Prompting Techniques', color: '#3B82F6' },
@@ -45,7 +57,7 @@ export default function DashboardPage() {
 
   const completedCount = progress.completedSkills.length;
   const totalSkills = skills.length;
-  const earnedAchievements = checkAchievements(progress.completedSkills);
+  const earnedAchievements = checkAchievements(progress);
 
   const isSkillUnlocked = (skill: any) => {
     if (skill.prerequisites.length === 0) return true;
@@ -144,55 +156,33 @@ export default function DashboardPage() {
 
             {onboardingStep < 2 ? (
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button
+                <Button
                   onClick={handleCompleteOnboarding}
-                  style={{
-                    flex: 1,
-                    padding: '14px',
-                    background: 'transparent',
-                    border: '1px solid #3E3E3E',
-                    borderRadius: '10px',
-                    color: '#A3A3A3',
-                    fontSize: '15px',
-                    cursor: 'pointer'
-                  }}
+                  variant="ghost"
+                  size="large"
+                  style={{ flex: 1, borderRadius: '10px' }}
                 >
                   Skip
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setOnboardingStep(onboardingStep + 1)}
-                  style={{
-                    flex: 1,
-                    padding: '14px',
-                    background: '#D97757',
-                    border: 'none',
-                    borderRadius: '10px',
-                    color: 'white',
-                    fontSize: '15px',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
+                  variant="primary"
+                  size="large"
+                  style={{ flex: 1, borderRadius: '10px' }}
                 >
                   Next
-                </button>
+                </Button>
               </div>
             ) : (
-              <button
+              <Button
                 onClick={handleCompleteOnboarding}
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  background: '#D97757',
-                  border: 'none',
-                  borderRadius: '10px',
-                  color: 'white',
-                  fontSize: '15px',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
+                variant="primary"
+                size="large"
+                fullWidth
+                style={{ borderRadius: '10px' }}
               >
                 Get Started
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -282,7 +272,7 @@ export default function DashboardPage() {
             }}
           >
             <Target size={16} />
-            Skill Tree
+            Skill Forge
           </button>
 
           <button
@@ -311,10 +301,11 @@ export default function DashboardPage() {
             }}
           >
             <Claude size={16} />
-            Live Coaching
+            Prompt Coaching
           </button>
 
           <button
+            onClick={() => router.push('/achievements')}
             style={{
               width: '100%',
               padding: '8px 12px',
@@ -579,7 +570,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Skill Tree */}
+          {/* Skill Forge */}
           {Object.entries(categories).map(([categoryKey, categoryData]) => {
             const categorySkills = skills.filter(s => s.category === categoryKey);
             
@@ -621,11 +612,11 @@ export default function DashboardPage() {
                   gridTemplateColumns: 'repeat(2, 1fr)',
                   gap: '16px'
                 }}>
-                  {categorySkills.map((skill) => {
+                  {categorySkills.map((skill, index) => {
                     const difficultyDots = Array(skill.difficulty).fill('●').join('');
                     const isCompleted = progress.completedSkills.includes(skill.id);
                     const isUnlocked = isSkillUnlocked(skill);
-                    
+
                     return (
                       <button
                         key={skill.id}
@@ -637,9 +628,10 @@ export default function DashboardPage() {
                         disabled={!isUnlocked}
                         style={{
                           padding: '20px',
-                          background: isCompleted ? 'rgba(16, 185, 129, 0.05)' : '#2C2C2C',
-                          border: isCompleted 
-                            ? '1px solid rgba(16, 185, 129, 0.3)'
+                          animation: `fadeInUp 0.4s ease ${index * 0.1}s both`,
+                          background: isCompleted ? 'rgba(217, 119, 87, 0.05)' : '#2C2C2C',
+                          border: isCompleted
+                            ? '1px solid rgba(217, 119, 87, 0.3)'
                             : isUnlocked 
                               ? '1px solid #3E3E3E' 
                               : '1px solid #343434',
@@ -673,7 +665,7 @@ export default function DashboardPage() {
                             <div style={{
                               width: '24px',
                               height: '24px',
-                              background: '#10B981',
+                              background: '#D97757',
                               borderRadius: '50%',
                               display: 'flex',
                               alignItems: 'center',
@@ -734,6 +726,28 @@ export default function DashboardPage() {
           })}
         </div>
       </div>
+
+      {/* Achievement Notifications */}
+      {notifications.map((notification) => (
+        <AchievementUnlockNotification
+          key={notification.id}
+          achievement={notification.achievement}
+          onClose={() => dismissNotification(notification.id)}
+        />
+      ))}
+
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }

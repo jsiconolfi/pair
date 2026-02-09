@@ -240,72 +240,92 @@ Please review this code and provide specific, actionable feedback:
     realWorldImpact: 'Role prompting improves response relevance by 50% for specialized technical tasks.',
   },
 
-  {
-    id: 'chain-of-thought',
-    title: 'Chain-of-Thought Reasoning',
-    description: 'Get Claude to show its reasoning step-by-step for complex problems',
-    category: 'prompting',
-    difficulty: 2,
-    
-    objective: 'Use chain-of-thought prompting to get better reasoning on complex problems',
-    
-    explanation: `Chain-of-thought (CoT) prompting asks Claude to "think out loud" and show its reasoning process.
+ {
+  id: 'chain-of-thought',
+  title: 'Chain-of-Thought Reasoning',
+  description: 'Get Claude to show its reasoning step-by-step for complex problems',
+  category: 'prompting',
+  difficulty: 2,
+  
+  objective: 'Use chain-of-thought prompting to get better reasoning on complex problems',
+  
+  explanation: `Chain-of-thought (CoT) prompting asks Claude to "think out loud" and show its reasoning process.
 
 **Why use CoT?**
-- Dramatically improves accuracy on complex problems
+- Dramatically improves accuracy on complex problems (up to 300%!)
 - Makes Claude's reasoning transparent and checkable
 - Helps catch logical errors early
-- Better for math, logic, and multi-step problems
+- Essential for math, logic, and multi-step problems
 
 **How to trigger CoT:**
 - Simply ask: "Let's think step by step"
 - Or: "Show your reasoning before the answer"
 - Or: "Walk me through your thought process"
-- Works best with clear, specific problems`,
+- Or: "Think through this carefully"
 
-    task: `Your challenge: Solve this logic puzzle with Claude showing its reasoning.
+**When to use it:**
+- Complex calculations or math problems
+- Logic puzzles and reasoning challenges
+- Debugging code issues
+- Multi-step analysis tasks
+- Decision-making with trade-offs
+- Any task where "how" matters as much as "what"`,
+
+  task: `Your challenge: Solve this logic puzzle with Claude showing its reasoning.
 
 **The Puzzle:**
 Five houses in a row are painted different colors: red, blue, green, yellow, white.
+
+Constraints:
 - The green house is immediately to the left of the white house
-- The red house is at one end
+- The red house is at one end of the row
 - The blue house is not next to the red house
-- The yellow house is in the middle
+- The yellow house is in the middle (position 3)
 
-What is the order of house colors from left to right?
+**What is the order of house colors from left to right?**
 
-**Your goal:** Get Claude to solve this step-by-step, showing all reasoning.`,
+**Your goal:** Get Claude to solve this step-by-step, showing all reasoning before giving the final answer.`,
 
-    hints: [
-      'Explicitly ask Claude to think step by step',
-      'Request that Claude show each constraint and what it eliminates',
-      'Ask for the reasoning BEFORE the final answer',
-    ],
-    
-    successCriteria: [
-      'Prompt explicitly requests step-by-step reasoning',
-      'Claude shows consideration of each constraint',
-      'Claude eliminates impossible arrangements visibly',
-      'Final answer is correct with clear reasoning path shown',
-    ],
-    
-    examplePrompt: `Let's solve this logic puzzle step by step. Before giving the final answer, show your reasoning for each constraint and how it narrows down the possibilities.
+  hints: [
+    'Explicitly ask Claude to think step by step or show its reasoning',
+    'Request that Claude consider each constraint one at a time',
+    'Ask Claude to eliminate impossible arrangements as it goes',
+    'Tell Claude to show its work before stating the final answer',
+  ],
+  
+  successCriteria: [
+    'Prompt explicitly requests step-by-step reasoning',
+    'Claude shows consideration of each constraint individually',
+    'Claude eliminates impossible arrangements with explanations',
+    'Claude shows the reasoning path clearly',
+    'Final answer is correct: Red, Blue, Yellow, Green, White',
+  ],
+  
+  examplePrompt: `Let's solve this logic puzzle step by step. I want you to think through each constraint carefully and show your reasoning before giving the final answer.
 
-[Puzzle details]
+[Puzzle details here]
 
-Think through each clue systematically and show your work.`,
-    
-    learningPoints: [
-      'CoT dramatically improves complex problem-solving accuracy',
-      'Explicit prompts for reasoning work better than implicit ones',
-      'Seeing the reasoning helps you verify correctness',
-      'Works across domains: math, logic, analysis, debugging',
-    ],
-    
-    prerequisites: ['xml-tags'],
-    
-    realWorldImpact: 'Chain-of-thought prompting increases accuracy on complex reasoning tasks by up to 300%.',
-  },
+Instructions for solving:
+1. Start by identifying what we know for certain (like the yellow house position)
+2. Apply each constraint one by one
+3. Eliminate impossible arrangements and explain why
+4. Show your work for each step
+5. Only give the final answer after walking through the logic
+
+Please think step by step and show your reasoning.`,
+  
+  learningPoints: [
+    'Chain-of-thought dramatically improves accuracy on complex tasks',
+    'Explicit requests for reasoning work better than implicit ones',
+    'Seeing the reasoning helps you verify correctness',
+    'CoT works across all domains: math, logic, coding, analysis',
+    'The phrase "let\'s think step by step" is surprisingly powerful',
+  ],
+  
+  prerequisites: [], // Available immediately
+
+  realWorldImpact: 'Research shows chain-of-thought prompting increases accuracy on complex reasoning tasks by up to 300%, especially on math and logic problems.',
+},
 
   {
     id: 'projects-intro',
@@ -368,8 +388,8 @@ Think through each clue systematically and show your work.`,
       'Projects are powerful for long-term, focused work',
     ],
     
-    prerequisites: ['xml-tags', 'few-shot'],
-    
+    prerequisites: [], // Available immediately
+
     realWorldImpact: 'Teams using Projects report 70% reduction in repeated context-setting and more consistent code quality.',
   },
 ];

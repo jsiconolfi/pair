@@ -5,15 +5,21 @@ export interface UserProgress {
   unlockedSkills: string[];
   achievements: string[];
   lastVisit: number;
+  completionTimestamps: Record<string, number>; // skillId -> timestamp
+  noHintSkills: string[]; // skills completed without using hints
 }
 
-export const saveProgress = (skillId: string) => {
+export const saveProgress = (skillId: string, usedHints: boolean = true) => {
   if (typeof window === 'undefined') return;
-  
+
   const progress = getProgress();
   if (!progress.completedSkills.includes(skillId)) {
     progress.completedSkills.push(skillId);
+    progress.completionTimestamps[skillId] = Date.now();
     progress.lastVisit = Date.now();
+    if (!usedHints && !progress.noHintSkills.includes(skillId)) {
+      progress.noHintSkills.push(skillId);
+    }
     localStorage.setItem('pair-progress', JSON.stringify(progress));
   }
 };
@@ -24,20 +30,28 @@ export const getProgress = (): UserProgress => {
       completedSkills: [],
       unlockedSkills: [],
       achievements: [],
-      lastVisit: Date.now()
+      lastVisit: Date.now(),
+      completionTimestamps: {},
+      noHintSkills: []
     };
   }
-  
+
   const stored = localStorage.getItem('pair-progress');
   if (stored) {
-    return JSON.parse(stored);
+    const parsed = JSON.parse(stored);
+    // Backfill new fields for existing users
+    if (!parsed.completionTimestamps) parsed.completionTimestamps = {};
+    if (!parsed.noHintSkills) parsed.noHintSkills = [];
+    return parsed;
   }
-  
+
   return {
     completedSkills: [],
     unlockedSkills: [],
     achievements: [],
-    lastVisit: Date.now()
+    lastVisit: Date.now(),
+    completionTimestamps: {},
+    noHintSkills: []
   };
 };
 

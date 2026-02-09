@@ -6,6 +6,10 @@ import { getSkillById } from '@/lib/skills';
 import { Skill } from '@/lib/skills';
 import { ConversationMessage } from '@/types';
 import { Claude } from '@lobehub/icons';
+import { saveProgress } from '@/lib/storage';
+import { useAchievements } from '@/hooks/useAchievements';
+import AchievementUnlockNotification from '@/components/AchievementUnlockNotification';
+import Button from '@/components/Button';
 import {
   ChevronLeft,
   User,
@@ -34,6 +38,7 @@ export default function ChallengePage() {
   const [showExample, setShowExample] = useState(false);
   const [hintIndex, setHintIndex] = useState(0);
   const [completed, setCompleted] = useState(false);
+  const { notifications, checkForNewAchievements, dismissNotification } = useAchievements();
 
   useEffect(() => {
     const loadedSkill = getSkillById(skillId);
@@ -140,9 +145,18 @@ Be encouraging and specific in your feedback. Use examples from their prompt to 
         setConversationHistory([...newHistory, assistantMessage]);
 
         // Check for completion keywords (simple heuristic)
-        if (data.message.toLowerCase().includes('mastery') || 
+        if (data.message.toLowerCase().includes('mastery') ||
             data.message.toLowerCase().includes('excellent work') ||
             data.message.toLowerCase().includes('perfect')) {
+          // Save skill progress (track whether hints were used)
+          const usedHints = hintIndex > 0;
+          saveProgress(skillId, usedHints);
+
+          // Check for new achievements
+          setTimeout(() => {
+            checkForNewAchievements();
+          }, 500);
+
           setTimeout(() => setCompleted(true), 1000);
         }
       } else {
@@ -238,7 +252,7 @@ Be encouraging and specific in your feedback. Use examples from their prompt to 
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
         >
           <ChevronLeft size={16} />
-          Back to skill tree
+          Back to Skill Forge
         </button>
 
         <div style={{ 
@@ -808,28 +822,27 @@ Be encouraging and specific in your feedback. Use examples from their prompt to 
               </ul>
             </div>
 
-            <button
+            <Button
               onClick={() => router.push('/dashboard')}
-              style={{
-                width: '100%',
-                padding: '14px',
-                background: '#D97757',
-                border: 'none',
-                borderRadius: '10px',
-                color: 'white',
-                fontSize: '15px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'background 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#E89A7B'}
-              onMouseLeave={(e) => e.currentTarget.style.background = '#D97757'}
+              variant="primary"
+              size="large"
+              fullWidth
+              style={{ borderRadius: '10px' }}
             >
               Continue Learning
-            </button>
+            </Button>
           </div>
         </div>
       )}
+
+      {/* Achievement Notifications */}
+      {notifications.map((notification) => (
+        <AchievementUnlockNotification
+          key={notification.id}
+          achievement={notification.achievement}
+          onClose={() => dismissNotification(notification.id)}
+        />
+      ))}
 
       <style>{`
         @keyframes pulse {

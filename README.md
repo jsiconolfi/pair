@@ -10,7 +10,7 @@ Forge presents a skill tree of Claude techniques and pairs you with an AI mentor
 
 - **Guides your thinking** through Socratic dialogue — asks questions instead of giving answers
 - **Teaches real techniques** — XML tags, few-shot prompting, role prompting, chain-of-thought, Projects
-- **Provides live coaching** — analyze any prompt and get actionable suggestions for improvement
+- **Provides prompt coaching** — analyze any prompt and get actionable suggestions for improvement
 - **Tracks your progress** — skills mastered, achievements earned, and a visual skill tree
 
 ## Features
@@ -84,7 +84,7 @@ Forge presents a skill tree of Claude techniques and pairs you with an AI mentor
 pair/
 ├── app/
 │   ├── api/chat/             # Claude API route (challenge chat)
-│   │   └── coaching/         # Claude API route (live coaching)
+│   │   └── coaching/         # Claude API route (prompt coaching)
 │   ├── challenge/[id]/       # Challenge page (info sidebar + mentor chat)
 │   ├── coaching/             # Live coaching page (prompt analysis)
 │   ├── dashboard/            # Skill tree, progress, and achievements
